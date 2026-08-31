@@ -1,15 +1,18 @@
 {
   "expo": {
-    "name": "move-app-mobile",
-    "slug": "move-app-mobile",
+    "name": "UNIQUE",
+    "slug": "unique-app",
+    "scheme": "uniqueapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "co.uniqueappcol.app"
     },
     "android": {
+      "package": "co.uniqueappcol.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -20,6 +23,14 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "@clerk/expo",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
     }
   }
 }
