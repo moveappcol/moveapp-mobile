@@ -1,11 +1,26 @@
 import { useAuth, useUser } from "@clerk/expo";
 import { Link } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { apiFetch } from "@/lib/api";
 
 type CreditsResponse = { credits: number; vencimiento: string | null; perfilCompleto: boolean };
-type ScreenState = { loading: boolean; error: string | null; data: CreditsResponse | null };
+type PlanInfo = { id: string; name?: string; label: string; price: number };
+type PlanResponse =
+  | { hasSubscription: false }
+  | {
+      hasSubscription: true;
+      estado: string;
+      plan: PlanInfo | null;
+      proximoCobro: string | null;
+      planSiguiente: PlanInfo | null;
+    };
+type ScreenState = {
+  loading: boolean;
+  error: string | null;
+  credits: CreditsResponse | null;
+  plan: PlanResponse | null;
+};
 
 function GuestView() {
   return (
@@ -34,21 +49,31 @@ function GuestView() {
 function SignedInView() {
   const { getToken, signOut } = useAuth();
   const { user } = useUser();
-  const [state, setState] = useState<ScreenState>({ loading: true, error: null, data: null });
-
-  const load = useCallback(async () => {
-    setState((s) => ({ ...s, loading: true, error: null }));
-    try {
-      const token = await getToken();
-      const data = await apiFetch<CreditsResponse>("/me/credits", token);
-      setState({ loading: false, error: null, data });
-    } catch {
-      setState({ loading: false, error: "No pudimos cargar tus créditos.", data: null });
-    }
-  }, [getToken]);
+  const [state, setState] = useState<ScreenState>({
+    loading: true,
+    error: null,
+    credits: null,
+    plan: null,
+  });
 
   useEffect(() => {
-    load();
+    (async () => {
+      try {
+        const token = await getToken();
+        const [credits, plan] = await Promise.all([
+          apiFetch<CreditsResponse>("/me/credits", token),
+          apiFetch<PlanResponse>("/me/plan", token),
+        ]);
+        setState({ loading: false, error: null, credits, plan });
+      } catch {
+        setState({
+          loading: false,
+          error: "No pudimos cargar tu cuenta.",
+          credits: null,
+          plan: null,
+        });
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -59,12 +84,37 @@ function SignedInView() {
       {state.loading && <ActivityIndicator style={styles.loader} />}
       {state.error && <Text style={styles.error}>{state.error}</Text>}
 
-      {state.data && (
+      {state.credits && (
         <View style={styles.card}>
-          <Text style={styles.creditsNumber}>{state.data.credits}</Text>
+          <Text style={styles.creditsNumber}>{state.credits.credits}</Text>
           <Text style={styles.creditsLabel}>créditos disponibles</Text>
-          {state.data.vencimiento && (
-            <Text style={styles.expiry}>Vencen el {state.data.vencimiento}</Text>
+          {state.credits.vencimiento && (
+            <Text style={styles.expiry}>Vencen el {state.credits.vencimiento}</Text>
+          )}
+        </View>
+      )}
+
+      {state.plan && (
+        <View style={styles.planCard}>
+          <Text style={styles.planLabel}>Mi plan</Text>
+          {state.plan.hasSubscription ? (
+            <>
+              <Text style={styles.planName}>
+                {state.plan.plan ? `${state.plan.plan.name ?? ""} — ${state.plan.plan.label}` : "—"}
+              </Text>
+              <Text style={styles.planMeta}>Estado: {state.plan.estado}</Text>
+              {state.plan.proximoCobro && (
+                <Text style={styles.planMeta}>Próximo cobro: {state.plan.proximoCobro}</Text>
+              )}
+              {state.plan.planSiguiente && (
+                <Text style={styles.planMeta}>
+                  Cambia a {state.plan.planSiguiente.name} ({state.plan.planSiguiente.label}) en la
+                  próxima renovación
+                </Text>
+              )}
+            </>
+          ) : (
+            <Text style={styles.planMeta}>Todavía no tenés un plan activo.</Text>
           )}
         </View>
       )}
@@ -118,6 +168,23 @@ const styles = StyleSheet.create({
   creditsNumber: { fontSize: 48, fontWeight: "800", color: "#063009" },
   creditsLabel: { fontSize: 14, color: "#06300999", marginTop: 4 },
   expiry: { fontSize: 13, color: "#06300977", marginTop: 12 },
+  planCard: {
+    marginTop: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#06300922",
+    padding: 20,
+  },
+  planLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#ff4f3f",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  planName: { fontSize: 17, fontWeight: "700", color: "#063009" },
+  planMeta: { fontSize: 13, color: "#06300999", marginTop: 4 },
   button: {
     backgroundColor: "#ff4f3f",
     borderRadius: 999,
