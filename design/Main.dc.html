@@ -1,0 +1,699 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    a { color: #ff4f3f; text-decoration: none; }
+    a:hover { color: #e6392b; }
+    button { font-family: 'Inter', system-ui, sans-serif; }
+    input { outline: none; }
+    ::-webkit-scrollbar { width: 0; height: 0; }
+    .chiprow::-webkit-scrollbar { display: none; }
+  </style>
+</helmet>
+
+<div style="width:100%; height:100%; position:relative; display:flex; flex-direction:column; background:#ffffff; font-family:'Inter', system-ui, sans-serif; color:#063009; overflow:hidden;">
+
+  <div style="flex:1; overflow-y:auto;">
+
+    <!-- ===================== GIMNASIOS ===================== -->
+    <sc-if value="{{showGymsList}}" hint-placeholder-val="{{true}}">
+      <div style="padding:24px 20px 4px;">
+        <div style="font-family:Georgia, 'Times New Roman', serif; font-size:19px; font-weight:700; color:#063009;">UNIQUE</div>
+        <div style="font-family:'Poppins',sans-serif; font-size:20px; font-weight:700; color:#063009; margin-top:12px;">Gimnasios afiliados</div>
+        <div style="font-size:13px; color:#06300999; margin-top:2px;">Busca gimnasios cerca de ti y filtra por actividad</div>
+      </div>
+
+      <div style="padding:14px 20px 0;">
+        <div style="display:flex; align-items:center; gap:8px; border:1px solid #06300933; border-radius:12px; padding:11px 14px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#06300999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input onChange="{{onSearchChange}}" value="{{searchQuery}}" placeholder="Buscar gimnasio..." style="border:none; font-family:'Inter',sans-serif; font-size:14px; color:#063009; width:100%; background:transparent;" />
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px; padding:12px 20px 0; align-items:center;">
+        <button onClick="{{toggleCityPicker}}" style="display:flex; align-items:center; gap:6px; background:#06300908; border:none; border-radius:999px; padding:9px 14px; font-size:12px; font-weight:700; color:#063009; cursor:pointer; flex:none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#063009" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          Bogotá
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#063009" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+      </div>
+
+      <sc-if value="{{showCityPicker}}" hint-placeholder-val="{{false}}">
+        <div style="margin:8px 20px 0; border:1px solid #06300922; border-radius:14px; padding:6px; background:#fff;">
+          <div style="padding:10px 12px; border-radius:10px; background:#06300908; font-size:13px; font-weight:700; color:#063009; display:flex; justify-content:space-between; align-items:center;">
+            Bogotá
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff4f3f" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <div style="padding:10px 12px; font-size:13px; color:#06300977;">Muy pronto más ciudades</div>
+        </div>
+      </sc-if>
+
+      <div class="chiprow" style="display:flex; gap:8px; padding:14px 20px; overflow-x:auto; white-space:nowrap;">
+        <sc-for list="{{activityChips}}" as="chip" hint-placeholder-count="6">
+          <button onClick="{{chip.pick}}" style="flex:none; border-radius:999px; padding:8px 14px; font-size:12px; font-weight:700; cursor:pointer; background:{{chip.bg}}; color:{{chip.color}}; border:1px solid {{chip.border}};">{{chip.label}}</button>
+        </sc-for>
+      </div>
+
+      <div style="padding:0 20px 16px;">
+        <sc-if value="{{locationEnabled}}" hint-placeholder-val="{{false}}">
+          <div style="border-radius:16px; background:#06300908; padding:14px; position:relative; overflow:hidden; height:130px;">
+            <svg width="100%" height="100%" viewBox="0 0 350 130" style="position:absolute; top:0; left:0;">
+              <line x1="0" y1="30" x2="350" y2="20" stroke="#06300922" stroke-width="3"/>
+              <line x1="0" y1="80" x2="350" y2="95" stroke="#06300922" stroke-width="3"/>
+              <line x1="60" y1="0" x2="90" y2="130" stroke="#06300922" stroke-width="3"/>
+              <line x1="230" y1="0" x2="210" y2="130" stroke="#06300922" stroke-width="3"/>
+            </svg>
+            <div style="position:absolute; left:170px; top:58px; width:14px; height:14px; border-radius:999px; background:#ff4f3f; border:3px solid #fff; box-shadow:0 0 0 4px #ff4f3f33;"></div>
+            <svg style="position:absolute; left:100px; top:30px;" width="20" height="26" viewBox="0 0 24 30" fill="#063009"><path d="M12 0C6 0 1 5 1 11c0 8 11 19 11 19s11-11 11-19C23 5 18 0 12 0z"/><circle cx="12" cy="11" r="4" fill="#fff"/></svg>
+            <svg style="position:absolute; left:220px; top:70px;" width="20" height="26" viewBox="0 0 24 30" fill="#063009"><path d="M12 0C6 0 1 5 1 11c0 8 11 19 11 19s11-11 11-19C23 5 18 0 12 0z"/><circle cx="12" cy="11" r="4" fill="#fff"/></svg>
+            <svg style="position:absolute; left:60px; top:75px;" width="20" height="26" viewBox="0 0 24 30" fill="#063009"><path d="M12 0C6 0 1 5 1 11c0 8 11 19 11 19s11-11 11-19C23 5 18 0 12 0z"/><circle cx="12" cy="11" r="4" fill="#fff"/></svg>
+            <div style="position:absolute; bottom:8px; left:12px; font-size:10px; font-weight:700; color:#063009; background:#ffffffcc; padding:3px 8px; border-radius:999px;">Bogotá · tu ubicación</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{locationDisabled}}" hint-placeholder-val="{{true}}">
+          <div style="border:1px dashed #06300933; border-radius:16px; padding:18px; text-align:center;">
+            <div style="font-size:13px; color:#06300999; margin-bottom:10px;">Activa tu ubicación para ver qué tan cerca están los gimnasios</div>
+            <button onClick="{{enableLocation}}" style="background:#063009; color:#fff; border:none; border-radius:999px; padding:10px 18px; font-family:'Poppins',sans-serif; font-weight:700; font-size:13px; cursor:pointer;">Usar mi ubicación</button>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="padding:0 20px 28px; display:flex; flex-direction:column; gap:14px;">
+        <sc-for list="{{gyms}}" as="gym" hint-placeholder-count="4">
+          <div onClick="{{gym.select}}" style="border:1px solid #06300922; border-radius:18px; overflow:hidden; cursor:pointer;">
+            <div style="width:100%; aspect-ratio:16/9; background:#0630090d; display:flex; align-items:center; justify-content:center;">
+              <span style="font-family:'Poppins',sans-serif; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#06300966;">Foto próximamente</span>
+            </div>
+            <div style="padding:14px;">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                <div style="font-family:'Poppins',sans-serif; font-weight:700; font-size:15px; color:#063009;">{{gym.name}}</div>
+                <sc-if value="{{gym.showDistance}}" hint-placeholder-val="{{false}}">
+                  <div style="font-family:'Poppins',sans-serif; font-size:12px; font-weight:700; color:#ff4f3f; white-space:nowrap;">{{gym.distance}}</div>
+                </sc-if>
+              </div>
+              <div style="font-size:13px; color:#06300999; margin-top:3px;">{{gym.activitiesLabel}}</div>
+              <div style="font-size:12px; color:#0630097a; margin-top:2px;">{{gym.address}}</div>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{noGymsFound}}" hint-placeholder-val="{{false}}">
+          <div style="text-align:center; padding:24px 0; font-size:13px; color:#06300999;">No encontramos gimnasios con esos filtros.</div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <!-- ===================== GIMNASIO: DETALLE ===================== -->
+    <sc-if value="{{showGymDetail}}" hint-placeholder-val="{{false}}">
+      <div style="width:100%; aspect-ratio:16/9; background:#0630090d; display:flex; align-items:center; justify-content:center; position:relative;">
+        <span style="font-family:'Poppins',sans-serif; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#06300966;">Foto próximamente</span>
+        <button onClick="{{backToList}}" style="position:absolute; top:16px; left:16px; width:34px; height:34px; border-radius:999px; background:#ffffffee; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#063009" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+      </div>
+      <div style="padding:20px 20px 32px;">
+        <div style="font-family:'Poppins',sans-serif; font-weight:700; font-size:12px; color:#06300999; text-transform:uppercase; letter-spacing:0.5px;">{{selectedGym.activitiesLabel}}</div>
+        <div style="font-family:'Poppins',sans-serif; font-weight:800; font-size:23px; color:#063009; margin-top:4px;">{{selectedGym.name}}</div>
+        <div style="font-size:13px; color:#06300999; margin-top:4px;">{{selectedGym.address}}, {{selectedGym.city}}</div>
+
+        <sc-if value="{{selectedGym.hasDescription}}" hint-placeholder-val="{{true}}">
+          <div style="font-size:14px; color:#063009cc; margin-top:16px; line-height:1.55;">{{selectedGym.description}}</div>
+        </sc-if>
+
+        <div style="font-family:'Poppins',sans-serif; font-weight:700; font-size:16px; color:#063009; margin-top:28px;">Clases disponibles</div>
+
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+          <sc-for list="{{classes}}" as="cls" hint-placeholder-count="3">
+            <div style="display:flex; justify-content:space-between; align-items:center; border:1px solid #06300922; border-radius:16px; padding:14px 16px;">
+              <div>
+                <div style="font-weight:700; font-size:14px; color:#063009;">{{cls.name}}</div>
+                <div style="font-size:12px; color:#06300999; margin-top:3px;">{{cls.horario}} · {{cls.cupos}}</div>
+              </div>
+              <button onClick="{{cls.book}}" style="background:#ff4f3f; color:#fff; border:none; border-radius:999px; padding:9px 16px; font-family:'Poppins',sans-serif; font-weight:700; font-size:12px; cursor:pointer; white-space:nowrap; flex:none;">{{cls.credits}} créditos</button>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{noClasses}}" hint-placeholder-val="{{false}}">
+          <div style="font-size:13px; color:#06300999; margin-top:12px; line-height:1.5;">Muy pronto vas a poder ver y reservar clases en este gimnasio.</div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <!-- ===================== PLANES ===================== -->
+    <sc-if value="{{showPlansList}}" hint-placeholder-val="{{false}}">
+      <div style="padding:26px 20px 4px;">
+        <div style="font-family:'Poppins',sans-serif; font-size:20px; font-weight:700; color:#063009;">Planes de créditos</div>
+        <div style="font-size:13px; color:#06300999; margin-top:2px;">Elige un plan mensual. Los créditos duran 1 mes.</div>
+      </div>
+      <div style="padding:16px 20px 32px; display:flex; flex-direction:column; gap:14px;">
+        <sc-for list="{{plans}}" as="plan" hint-placeholder-count="3">
+          <div style="border-radius:20px; padding:20px; border:{{plan.borderStyle}}; background:#fff; position:relative;">
+            <sc-if value="{{plan.popular}}" hint-placeholder-val="{{false}}">
+              <div style="position:absolute; top:-11px; left:20px; background:#ff4f3f; color:#fff; font-family:'Poppins',sans-serif; font-size:10px; font-weight:700; padding:4px 10px; border-radius:999px;">Más popular</div>
+            </sc-if>
+            <div style="font-family:'Poppins',sans-serif; font-size:12px; font-weight:700; color:#ff4f3f; text-transform:uppercase; letter-spacing:0.5px;">{{plan.name}}</div>
+            <div style="font-family:'Poppins',sans-serif; font-size:16px; font-weight:700; color:#063009; margin-top:4px;">{{plan.label}}</div>
+            <div style="font-family:'Poppins',sans-serif; font-size:26px; font-weight:800; color:#063009; margin-top:4px;">{{plan.price}}</div>
+            <div style="font-size:12px; color:#06300999; margin-top:2px;">al mes · cancela cuando quieras</div>
+            <button onClick="{{plan.select}}" style="margin-top:14px; width:100%; background:{{plan.btnBg}}; color:#fff; border:none; border-radius:999px; padding:13px; font-family:'Poppins',sans-serif; font-weight:700; font-size:14px; cursor:pointer;">Elegir plan</button>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- ===================== PLANES: CHECKOUT ===================== -->
+    <sc-if value="{{showCheckoutPayment}}" hint-placeholder-val="{{false}}">
+      <div style="padding:20px;">
+        <button onClick="{{backToPlans}}" style="background:none; border:none; display:flex; align-items:center; gap:6px; color:#063009; font-size:14px; font-weight:600; padding:0; cursor:pointer;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#063009" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Planes
+        </button>
+
+        <div style="font-family:'Poppins',sans-serif; font-size:19px; font-weight:700; color:#063009; margin-top:20px;">Suscribirme a {{checkoutPlan.name}}</div>
+        <div style="border:1px solid #06300922; border-radius:16px; padding:16px; margin-top:14px;">
+          <div style="display:flex; justify-content:space-between; font-size:14px; color:#063009; font-weight:700;">
+            <span>{{checkoutPlan.label}}</span>
+            <span>{{checkoutPlan.price}}/mes</span>
+          </div>
+        </div>
+
+        <div style="font-family:'Poppins',sans-serif; font-size:14px; font-weight:700; color:#063009; margin-top:24px;">Método de pago</div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+          <button onClick="{{payCard}}" style="display:flex; align-items:center; gap:10px; border:1px solid #06300933; border-radius:14px; padding:14px 16px; background:#fff; cursor:pointer;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#063009" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            <span style="font-family:'Poppins',sans-serif; font-weight:700; font-size:14px; color:#063009;">Tarjeta (Wompi)</span>
+          </button>
+          <button onClick="{{payApple}}" style="display:flex; align-items:center; justify-content:center; gap:8px; border:none; border-radius:14px; padding:14px 16px; background:#000; cursor:pointer;">
+            <span style="font-family:'Poppins',sans-serif; font-weight:700; font-size:14px; color:#fff;">Apple Pay</span>
+          </button>
+        </div>
+        <div style="font-size:11px; color:#06300977; margin-top:14px; text-align:center;">Tu información viaja encriptada. UNIQUE nunca almacena los datos de tu tarjeta.</div>
+      </div>
+    </sc-if>
+
+    <!-- ===================== PLANES: ÉXITO ===================== -->
+    <sc-if value="{{showCheckoutSuccess}}" hint-placeholder-val="{{false}}">
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px; text-align:center; height:100%;">
+        <div style="width:64px; height:64px; border-radius:999px; background:#06300908; display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#063009" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div style="font-family:'Poppins',sans-serif; font-size:20px; font-weight:700; color:#063009;">¡Pago aprobado!</div>
+        <div style="font-size:14px; color:#06300999; margin-top:8px; line-height:1.5;">Tus créditos ya están disponibles en tu cuenta.</div>
+        <button onClick="{{goToPerfilAfterPay}}" style="margin-top:24px; background:#ff4f3f; color:#fff; border:none; border-radius:999px; padding:14px 24px; font-family:'Poppins',sans-serif; font-weight:700; font-size:14px; cursor:pointer;">Ver mis créditos</button>
+      </div>
+    </sc-if>
+
+    <!-- ===================== QUIÉNES SOMOS ===================== -->
+    <sc-if value="{{tabNosotros}}" hint-placeholder-val="{{false}}">
+      <div style="padding:26px 28px 40px;">
+        <div style="text-align:center; margin-bottom:24px;">
+          <div style="font-family:Georgia, 'Times New Roman', serif; font-size:26px; font-weight:700; letter-spacing:1px; color:#063009;">UNIQUE</div>
+          <div style="width:22px; height:22px; border-radius:999px; background:#d4ff3f; margin:8px auto 0;"></div>
+        </div>
+        <div style="font-size:11px; font-weight:700; color:#06300977; text-transform:uppercase; letter-spacing:0.6px;">Sobre nosotros</div>
+        <div style="font-family:'Poppins',sans-serif; font-size:21px; font-weight:800; color:#063009; margin-top:4px;">UNIQUE — Quiénes somos</div>
+
+        <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px; font-size:13.5px; line-height:1.55; color:#063009cc;">
+          <p style="margin:0;">Somos una plataforma que sabe que cada persona es única.</p>
+          <p style="margin:0;">Creemos que no existe una sola manera de entrenar. Por eso, a través de UNIQUE puedes explorar diferentes disciplinas en distintos gimnasios y estudios de la ciudad, hasta encontrar esa rutina que se adapta a TI.</p>
+          <p style="margin:0;">Con UNIQUE, tus créditos son tu llave. Los usas donde quieras, cuando quieras, y descubres experiencias de entrenamiento que antes solo veías desde afuera.</p>
+          <p style="margin:0;">No creemos en el entrenamiento único para todos. Creemos en la libertad de moverte a tu manera — y en construir, junto a los centros de entrenamiento que confían en nosotros, una forma más flexible, honesta y humana de cuidar tu bienestar.</p>
+          <p style="margin:0;">Esto apenas comienza. UNIQUE nace en Bogotá con la convicción de que el movimiento nos hace mejores personas, y con el compromiso de hacerlo accesible para más gente cada día.</p>
+        </div>
+
+        <div style="font-family:'Poppins',sans-serif; font-size:16px; font-weight:700; color:#063009; margin-top:28px;">¿Cómo funciona?</div>
+        <div style="display:flex; flex-direction:column; gap:12px; margin-top:12px; font-size:13.5px; line-height:1.55; color:#063009cc;">
+          <p style="margin:0;">En la plataforma puedes comprar distintos planes: Starter, Balance o Volume, el que más se adapte a ti. Cada plan te entrega un paquete de créditos mensual.</p>
+          <p style="margin:0;">Con los créditos que obtengas vas a poder acceder a todos los gimnasios de la plataforma: los usas para reservar la clase que quieras, en el centro aliado que quieras, sin atarte a uno solo.</p>
+          <p style="margin:0;">Cada gimnasio puede tener un costo de créditos diferente por clase — antes de reservar, siempre puedes ver cuántos créditos vale cada clase en cada centro.</p>
+          <p style="margin:0;">Puedes cancelar tu clase hasta 24 horas antes de la hora reservada sin que se te cobren los créditos. Si cancelas después, o no asistes, los créditos sí se descuentan.</p>
+          <p style="margin:0;">Los créditos tienen una vigencia de 1 mes: se renuevan cada ciclo junto con tu plan.</p>
+        </div>
+
+        <div style="font-family:'Poppins',sans-serif; font-size:16px; font-weight:700; color:#063009; margin-top:28px;">Preguntas frecuentes</div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+          <sc-for list="{{faqs}}" as="faq" hint-placeholder-count="11">
+            <div onClick="{{faq.toggle}}" style="border-radius:16px; padding:14px 16px; cursor:pointer; background:{{faq.bg}};">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                <span style="font-family:'Poppins',sans-serif; font-weight:700; font-size:13px; color:{{faq.textColor}};">{{faq.q}}</span>
+                <span style="font-size:16px; font-weight:700; color:{{faq.plusColor}}; flex:none;">{{faq.symbol}}</span>
+              </div>
+              <sc-if value="{{faq.open}}" hint-placeholder-val="{{false}}">
+                <div style="font-size:12.5px; line-height:1.55; color:#063009b3; margin-top:10px;">{{faq.a}}</div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ===================== MIS RESERVAS ===================== -->
+    <sc-if value="{{tabReservas}}" hint-placeholder-val="{{false}}">
+      <sc-if value="{{authed}}" hint-placeholder-val="{{false}}">
+        <div style="padding:26px 20px 32px;">
+          <div style="font-family:'Poppins',sans-serif; font-size:21px; font-weight:700; color:#063009;">Mis Reservas</div>
+          <div style="display:flex; flex-direction:column; gap:12px; margin-top:20px;">
+            <sc-for list="{{reservations}}" as="r" hint-placeholder-count="2">
+              <div style="border:1px solid #06300922; border-radius:16px; padding:16px;">
+                <div style="font-weight:700; font-size:14px; color:#063009;">{{r.claseName}} — {{r.gymName}}</div>
+                <div style="font-size:12px; color:#06300999; margin-top:4px;">{{r.fecha}}</div>
+                <div style="font-size:11px; font-weight:700; color:#06300977; text-transform:uppercase; letter-spacing:0.4px; margin-top:7px;">{{r.estado}}</div>
+                <sc-if value="{{r.cancellable}}" hint-placeholder-val="{{true}}">
+                  <button onClick="{{r.cancel}}" style="margin-top:12px; background:none; border:1px solid #ff4f3f; color:#ff4f3f; border-radius:999px; padding:8px 14px; font-family:'Poppins',sans-serif; font-weight:700; font-size:12px; cursor:pointer;">Cancelar</button>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{noReservations}}" hint-placeholder-val="{{false}}">
+            <div style="font-size:14px; color:#06300999; margin-top:20px; text-align:center;">Todavía no tienes clases reservadas.</div>
+          </sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{notAuthed}}" hint-placeholder-val="{{true}}">
+        <div style="padding:60px 32px; text-align:center;">
+          <div style="font-family:'Poppins',sans-serif; font-size:18px; font-weight:700; color:#063009;">Mis reservas</div>
+          <div style="font-size:14px; color:#06300999; margin-top:10px; line-height:1.5;">Inicia sesión para ver las clases que reservaste.</div>
+          <button onClick="{{openSignIn}}" style="margin-top:20px; background:#ff4f3f; color:#fff; border:none; border-radius:999px; padding:13px 24px; font-family:'Poppins',sans-serif; font-weight:700; font-size:14px; cursor:pointer;">Iniciar sesión</button>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- ===================== PERFIL ===================== -->
+    <sc-if value="{{tabPerfil}}" hint-placeholder-val="{{false}}">
+      <sc-if value="{{authed}}" hint-placeholder-val="{{false}}">
+        <div style="padding:26px 20px 32px;">
+          <div style="font-family:'Poppins',sans-serif; font-size:21px; font-weight:700; color:#063009;">Mi cuenta</div>
+
+          <div style="border-radius:20px; background:#06300908; padding:30px; text-align:center; margin-top:20px;">
+            <div style="font-family:'Poppins',sans-serif; font-size:46px; font-weight:800; color:#063009;">{{credits}}</div>
+            <div style="font-size:13px; color:#06300999; margin-top:4px;">créditos disponibles</div>
+          </div>
+
+          <div style="border:1px solid #06300922; border-radius:16px; padding:20px; margin-top:16px;">
+            <div style="font-size:11px; font-weight:700; color:#ff4f3f; text-transform:uppercase; letter-spacing:0.5px;">Mi plan</div>
+            <sc-if value="{{hasPlan}}" hint-placeholder-val="{{false}}">
+              <div style="font-family:'Poppins',sans-serif; font-weight:700; font-size:17px; color:#063009; margin-top:9px;">{{activePlan.name}} — {{activePlan.label}}</div>
+              <div style="font-size:13px; color:#06300999; margin-top:5px;">Estado: Activa</div>
+              <div style="font-size:13px; color:#06300999; margin-top:2px;">Próximo cobro: 15 de septiembre</div>
+            </sc-if>
+            <sc-if value="{{noPlan}}" hint-placeholder-val="{{true}}">
+              <div style="font-size:13px; color:#06300999; margin-top:9px;">Todavía no tienes un plan activo.</div>
+              <button onClick="{{goToPlanes}}" style="margin-top:12px; background:#063009; color:#fff; border:none; border-radius:999px; padding:10px 16px; font-family:'Poppins',sans-serif; font-weight:700; font-size:12px; cursor:pointer;">Ver planes</button>
+            </sc-if>
+          </div>
+
+          <button onClick="{{doLogout}}" style="margin-top:28px; width:100%; background:none; border:1px solid #ff4f3f; color:#ff4f3f; border-radius:999px; padding:14px; font-family:'Poppins',sans-serif; font-weight:700; font-size:15px; cursor:pointer;">Cerrar sesión</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{notAuthed}}" hint-placeholder-val="{{true}}">
+        <div style="padding:32px 24px;">
+          <div style="font-family:'Poppins',sans-serif; font-size:20px; font-weight:700; color:#063009;">Tu cuenta</div>
+          <div style="font-size:14px; color:#06300999; line-height:1.55; margin-top:12px;">Puedes explorar los gimnasios sin cuenta. Para reservar clases y comprar créditos, necesitas iniciar sesión o crear una cuenta.</div>
+          <button onClick="{{openSignIn}}" style="margin-top:20px; width:100%; background:#ff4f3f; color:#fff; border:none; border-radius:999px; padding:15px; font-family:'Poppins',sans-serif; font-weight:700; font-size:15px; cursor:pointer;">Iniciar sesión</button>
+          <button onClick="{{openSignUp}}" style="margin-top:12px; width:100%; background:none; border:1px solid #06300933; color:#063009; border-radius:999px; padding:15px; font-family:'Poppins',sans-serif; font-weight:700; font-size:15px; cursor:pointer;">Crear cuenta</button>
+        </div>
+      </sc-if>
+    </sc-if>
+
+  </div>
+
+  <!-- Tab bar -->
+  <div style="display:flex; border-top:1px solid #06300922; background:#ffffff; padding:9px 0 20px; flex:none;">
+    <button onClick="{{setTabGyms}}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; font-size:9.5px; font-weight:600; cursor:pointer; color:{{tabGymsColor}};">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{tabGymsColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="4" height="9"/><rect x="10" y="6" width="4" height="13"/><rect x="17" y="3" width="4" height="16"/></svg>
+      Gimnasios
+    </button>
+    <button onClick="{{setTabPlanes}}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; font-size:9.5px; font-weight:600; cursor:pointer; color:{{tabPlanesColor}};">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{tabPlanesColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+      Planes
+    </button>
+    <button onClick="{{setTabNosotros}}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; font-size:9.5px; font-weight:600; cursor:pointer; color:{{tabNosotrosColor}};">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{tabNosotrosColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="{{tabNosotrosColor}}"/></svg>
+      Nosotros
+    </button>
+    <button onClick="{{setTabReservas}}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; font-size:9.5px; font-weight:600; cursor:pointer; color:{{tabReservasColor}};">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{tabReservasColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+      Reservas
+    </button>
+    <button onClick="{{setTabPerfil}}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; font-size:9.5px; font-weight:600; cursor:pointer; color:{{tabPerfilColor}};">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{tabPerfilColor}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+      Perfil
+    </button>
+  </div>
+
+  <!-- ===================== AUTH OVERLAY ===================== -->
+  <sc-if value="{{showAuthOverlay}}" hint-placeholder-val="{{false}}">
+    <div style="position:absolute; inset:0; background:#ffffff; z-index:50; display:flex; flex-direction:column;">
+      <div style="padding:18px 20px 0; display:flex; justify-content:flex-end;">
+        <button onClick="{{closeAuthOverlay}}" style="background:none; border:none; cursor:pointer; padding:6px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#063009" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+
+      <sc-if value="{{isSignIn}}" hint-placeholder-val="{{true}}">
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; padding:32px; gap:12px; margin-top:-40px;">
+          <div style="text-align:center; margin-bottom:24px;">
+            <div style="font-family:Georgia, 'Times New Roman', serif; font-size:34px; font-weight:700; letter-spacing:1px; color:#063009;">UNIQUE</div>
+            <div style="width:30px; height:30px; border-radius:999px; background:#d4ff3f; margin:10px auto 0;"></div>
+          </div>
+          <input placeholder="Correo" style="border:1px solid #06300933; border-radius:12px; padding:14px 16px; font-family:'Inter',sans-serif; font-size:15px; color:#063009; background:#fff;" />
+          <input placeholder="Contraseña" type="password" style="border:1px solid #06300933; border-radius:12px; padding:14px 16px; font-family:'Inter',sans-serif; font-size:15px; color:#063009; background:#fff;" />
+          <button onClick="{{doLogin}}" style="margin-top:8px; background:#ff4f3f; color:#fff; border:none; border-radius:999px; padding:16px; font-family:'Poppins',sans-serif; font-weight:700; font-size:15px; cursor:pointer;">Iniciar sesión</button>
+          <a href="#" onClick="{{switchToSignUp}}" style="text-align:center; font-size:14px; font-weight:600; margin-top:10px;">¿No tienes cuenta? Crea una</a>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{isSignUp}}" hint-placeholder-val="{{false}}">
+        <div style="flex:1; overflow-y:auto; display:flex; flex-direction:column; justify-content:center; padding:28px 32px; gap:12px;">
+          <div style="text-align:center; margin-bottom:16px;">
+            <div style="font-family:Georgia, 'Times New Roman', serif; font-size:30px; font-weight:700; letter-spacing:1px; color:#063009;">UNIQUE</div>
+            <div style="width:26px; height:26px; border-radius:999px; background:#d4ff3f; margin:8px auto 0;"></div>
+          </div>
+          <input placeholder="Correo" style="border:1px solid #06300933; border-radius:12px; padding:14px 16px; font-family:'Inter',sans-serif; font-size:15px; color:#063009; background:#fff;" />
+          <input placeholder="Contraseña" type="password" style="border:1px solid #06300933; border-radius:12px; padding:14px 16px; font-family:'Inter',sans-serif; font-size:15px; color:#063009; background:#fff;" />
+
+          <div style="display:flex; align-items:flex-start; gap:10px; margin-top:6px;">
+            <div onClick="{{togglePrivacy}}" style="width:20px; height:20px; border-radius:5px; border:1.5px solid #06300955; flex:none; margin-top:1px; cursor:pointer; background:{{privacyCheckBg}}; display:flex; align-items:center; justify-content:center;">
+              <sc-if value="{{privacyAccepted}}" hint-placeholder-val="{{false}}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </sc-if>
+            </div>
+            <span onClick="{{togglePrivacy}}" style="font-size:12px; color:#063009cc; line-height:1.4; cursor:pointer;">He leído y acepto la Política de Tratamiento de Datos Personales de UNIQUE.</span>
+          </div>
+
+          <div style="display:flex; align-items:flex-start; gap:10px;">
+            <div onClick="{{toggleTerms}}" style="width:20px; height:20px; border-radius:5px; border:1.5px solid #06300955; flex:none; margin-top:1px; cursor:pointer; background:{{termsCheckBg}}; display:flex; align-items:center; justify-content:center;">
+              <sc-if value="{{termsAccepted}}" hint-placeholder-val="{{false}}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </sc-if>
+            </div>
+            <span onClick="{{toggleTerms}}" style="font-size:12px; color:#063009cc; line-height:1.4; cursor:pointer;">He leído y acepto los Términos y Condiciones de Uso de UNIQUE.</span>
+          </div>
+
+          <button onClick="{{signUpSubmit}}" style="margin-top:10px; background:{{signUpButtonBg}}; color:#fff; border:none; border-radius:999px; padding:16px; font-family:'Poppins',sans-serif; font-weight:700; font-size:15px; cursor:pointer;">Crear cuenta</button>
+          <a href="#" onClick="{{switchToSignIn}}" style="text-align:center; font-size:14px; font-weight:600; margin-top:6px;">¿Ya tienes cuenta? Inicia sesión</a>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+</div>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      activeTab: 'gyms',
+      authed: false,
+      authOverlay: null,
+      pendingPlanId: null,
+      privacyAccepted: false,
+      termsAccepted: false,
+
+      searchQuery: '',
+      activityFilter: null,
+      showCityPicker: false,
+      locationEnabled: false,
+
+      selectedGymId: null,
+
+      selectedPlanId: null,
+      checkoutStep: 'none',
+
+      activePlan: null,
+      credits: 0,
+      reservations: [],
+
+      openFaqIds: []
+    };
+  }
+
+  renderVals() {
+    var self = this;
+
+    var gymsData = [
+      {
+        id: 'smash', name: 'SMASH BOX TRAINING CENTER', activities: ['Boxing'],
+        city: 'Bogotá', address: 'Calle 96 #11B - 67, Barrio Chico', distance: '0.8 km',
+        description: 'Combinamos boxeo y entrenamiento funcional para una experiencia dinámica y retadora, en un ambiente seguro y motivador.',
+        classes: [
+          { id: 'c1', name: 'Boxeo Funcional', horario: 'Lunes 6:00 pm', credits: 8, cupos: '12/15 cupos' },
+          { id: 'c2', name: 'Boxeo Principiantes', horario: 'Martes 7:00 am', credits: 6, cupos: '5/10 cupos' },
+          { id: 'c3', name: 'HIIT + Boxeo', horario: 'Miércoles 6:30 pm', credits: 10, cupos: '8/12 cupos' }
+        ]
+      },
+      { id: 'gym3', name: 'Gym 3', activities: ['Pilates'], city: 'Bogotá', address: 'Cl. 95 #13-87', distance: '1.4 km', description: '', classes: [] },
+      { id: 'gym4', name: 'Gym 4', activities: ['Cycling', 'Yoga', 'Pilates'], city: 'Bogotá', address: 'Cl. 72 #5-22, Tercer piso', distance: '2.1 km', description: '', classes: [] },
+      { id: 'gym2', name: 'Gym 2', activities: ['Yoga'], city: 'Bogotá', address: 'Calle 69A #4-72', distance: '3.0 km', description: '', classes: [] }
+    ];
+
+    var plansData = [
+      { id: 'plan-starter', name: 'Starter', label: '32 créditos', price: '$230.000', credits: 32, popular: false },
+      { id: 'plan-balance', name: 'Balance', label: '64 créditos', price: '$415.000', credits: 64, popular: true },
+      { id: 'plan-volume', name: 'Volume', label: '100 créditos', price: '$600.000', credits: 100, popular: false }
+    ];
+
+    var faqsData = [
+      { id: 'f1', q: '¿Cuántas clases puedo tomar al mes?', a: 'Depende de cuántos créditos tenga tu plan y del costo en créditos de cada clase (que varía según el gimnasio). En promedio, un paquete típico alcanza para varias clases al mes.' },
+      { id: 'f2', q: '¿Puedo ir varias veces al mismo gimnasio?', a: 'Sí, aunque para promover la diversidad de la red existe un límite de hasta 3 visitas mensuales por gimnasio dentro de tu plan.' },
+      { id: 'f3', q: '¿En qué ciudades está disponible UNIQUE?', a: 'Por ahora, UNIQUE opera en Bogotá. Próximamente en más ciudades del país.' },
+      { id: 'f4', q: '¿Cómo elijo y reservo una clase?', a: 'Desde la plataforma puedes ver el directorio de centros aliados, revisar horarios disponibles y reservar tu cupo directamente.' },
+      { id: 'f5', q: '¿Qué pasa si cancelo una clase reservada?', a: 'Puedes cancelar hasta 24 horas antes sin que se te cobren los créditos. Si cancelas después o no asistes, los créditos se descuentan igualmente.' },
+      { id: 'f6', q: '¿Cómo me registro en UNIQUE?', a: 'Creas tu cuenta con tus datos básicos, aceptas nuestra Política de Tratamiento de Datos y Términos, y eliges el plan que más se ajuste a ti.' },
+      { id: 'f7', q: '¿Cómo se maneja mi información personal?', a: 'Conforme a la Ley 1581 de Protección de Datos Personales. Solo compartimos con los gimnasios lo necesario para tu asistencia a las clases.' },
+      { id: 'f8', q: '¿Qué métodos de pago acepta UNIQUE?', a: 'Tarjetas de crédito y débito, PSE, Nequi, Bancolombia y otros medios a través de Wompi. UNIQUE nunca almacena los datos de tu tarjeta.' },
+      { id: 'f9', q: '¿Tengo que firmar un contrato a largo plazo?', a: 'No. Adquieres tu plan según lo que elijas, sin permanencias forzosas, y puedes cancelar cuando quieras.' },
+      { id: 'f10', q: 'Tengo un gimnasio y quiero ser aliado, ¿cómo hago?', a: 'Escríbenos a través del formulario de contacto de la página web y nos pondremos en contacto.' },
+      { id: 'f11', q: '¿Con quién hablo si tengo un problema?', a: 'Puedes contactar a nuestro equipo de soporte a través del formulario de contacto en nuestra página web www.uniqueappcol.com. Te respondemos lo más rápido posible.' }
+    ];
+
+    // ---- Gimnasios: filtering ----
+    var searchQuery = (self.state.searchQuery || '').toLowerCase();
+    var activityFilter = self.state.activityFilter;
+
+    var filteredGyms = gymsData.filter(function (g) {
+      var matchesSearch = !searchQuery || g.name.toLowerCase().indexOf(searchQuery) !== -1;
+      var matchesActivity = !activityFilter || g.activities.indexOf(activityFilter) !== -1;
+      return matchesSearch && matchesActivity;
+    });
+
+    var gymsForList = filteredGyms.map(function (g) {
+      return Object.assign({}, g, {
+        activitiesLabel: g.activities.join(', '),
+        showDistance: self.state.locationEnabled,
+        select: function () { self.setState({ selectedGymId: g.id }); }
+      });
+    });
+
+    var ACTIVITY_LABELS = ['Todos', 'Boxing', 'Pilates', 'Yoga', 'Cycling', 'Funcional'];
+    var activityChips = ACTIVITY_LABELS.map(function (label) {
+      var value = label === 'Todos' ? null : label;
+      var active = activityFilter === value;
+      return {
+        label: label,
+        bg: active ? '#063009' : '#06300908',
+        color: active ? '#ffffff' : '#063009',
+        border: active ? '#063009' : 'transparent',
+        pick: function () { self.setState({ activityFilter: active ? null : value }); }
+      };
+    });
+
+    var selectedGym = null;
+    for (var i = 0; i < gymsData.length; i++) {
+      if (gymsData[i].id === self.state.selectedGymId) selectedGym = gymsData[i];
+    }
+
+    var classesForDetail = selectedGym ? selectedGym.classes.map(function (c) {
+      return Object.assign({}, c, {
+        book: function () {
+          if (!self.state.authed) { self.setState({ authOverlay: 'signin' }); return; }
+          var newRes = {
+            id: 'res-' + Date.now(),
+            claseName: c.name,
+            gymName: selectedGym.name,
+            fecha: c.horario,
+            estado: 'Reservado',
+            credits: c.credits,
+            cancellable: true
+          };
+          self.setState({
+            reservations: [newRes].concat(self.state.reservations),
+            credits: self.state.credits - c.credits,
+            selectedGymId: null,
+            activeTab: 'reservas'
+          });
+        }
+      });
+    }) : [];
+
+    var selectedGymForRender = selectedGym ? Object.assign({}, selectedGym, {
+      activitiesLabel: selectedGym.activities.join(', '),
+      hasDescription: selectedGym.description.length > 0
+    }) : { name: '', activitiesLabel: '', address: '', city: '', description: '', hasDescription: false };
+
+    // ---- Reservas ----
+    var reservationsForList = self.state.reservations.map(function (r) {
+      return Object.assign({}, r, {
+        cancel: function () {
+          self.setState({
+            reservations: self.state.reservations.filter(function (x) { return x.id !== r.id; }),
+            credits: self.state.credits + r.credits
+          });
+        }
+      });
+    });
+
+    // ---- Planes / checkout ----
+    var plansForList = plansData.map(function (p) {
+      return Object.assign({}, p, {
+        borderStyle: p.popular ? '2px solid #ff4f3f' : '1px solid #06300922',
+        btnBg: p.popular ? '#ff4f3f' : '#063009',
+        select: function () {
+          if (!self.state.authed) {
+            self.setState({ authOverlay: 'signin', pendingPlanId: p.id });
+            return;
+          }
+          self.setState({ selectedPlanId: p.id, checkoutStep: 'payment' });
+        }
+      });
+    });
+
+    var checkoutPlan = null;
+    for (var j = 0; j < plansData.length; j++) {
+      if (plansData[j].id === self.state.selectedPlanId) checkoutPlan = plansData[j];
+    }
+    if (!checkoutPlan) checkoutPlan = { name: '', label: '', price: '', credits: 0, id: null };
+
+    function completePurchase() {
+      self.setState({
+        activePlan: { id: checkoutPlan.id, name: checkoutPlan.name, label: checkoutPlan.label, price: checkoutPlan.price },
+        credits: self.state.credits + checkoutPlan.credits,
+        checkoutStep: 'success'
+      });
+    }
+
+    function completeLogin() {
+      var pendingPlanId = self.state.pendingPlanId;
+      if (pendingPlanId) {
+        self.setState({
+          authed: true, authOverlay: null, pendingPlanId: null,
+          activeTab: 'planes', selectedPlanId: pendingPlanId, checkoutStep: 'payment'
+        });
+      } else {
+        self.setState({ authed: true, authOverlay: null });
+      }
+    }
+
+    // ---- FAQ ----
+    var faqsForList = faqsData.map(function (f) {
+      var open = self.state.openFaqIds.indexOf(f.id) !== -1;
+      return Object.assign({}, f, {
+        open: open,
+        bg: open ? '#ffffff' : '#063009',
+        textColor: open ? '#063009' : '#ffffff',
+        plusColor: open ? '#ff4f3f' : '#d4ff3f',
+        symbol: open ? '×' : '+',
+        toggle: function () {
+          var ids = self.state.openFaqIds.slice();
+          var idx = ids.indexOf(f.id);
+          if (idx === -1) ids.push(f.id); else ids.splice(idx, 1);
+          self.setState({ openFaqIds: ids });
+        }
+      });
+    });
+
+    return {
+      // tabs
+      tabGymsColor: self.state.activeTab === 'gyms' ? '#ff4f3f' : '#06300999',
+      tabPlanesColor: self.state.activeTab === 'planes' ? '#ff4f3f' : '#06300999',
+      tabNosotrosColor: self.state.activeTab === 'nosotros' ? '#ff4f3f' : '#06300999',
+      tabReservasColor: self.state.activeTab === 'reservas' ? '#ff4f3f' : '#06300999',
+      tabPerfilColor: self.state.activeTab === 'perfil' ? '#ff4f3f' : '#06300999',
+      setTabGyms: function () { self.setState({ activeTab: 'gyms', selectedGymId: null, checkoutStep: 'none' }); },
+      setTabPlanes: function () { self.setState({ activeTab: 'planes', checkoutStep: 'none' }); },
+      setTabNosotros: function () { self.setState({ activeTab: 'nosotros' }); },
+      setTabReservas: function () { self.setState({ activeTab: 'reservas' }); },
+      setTabPerfil: function () { self.setState({ activeTab: 'perfil' }); },
+
+      // gyms
+      showGymsList: self.state.activeTab === 'gyms' && !selectedGym,
+      showGymDetail: self.state.activeTab === 'gyms' && !!selectedGym,
+      backToList: function () { self.setState({ selectedGymId: null }); },
+      searchQuery: self.state.searchQuery,
+      onSearchChange: function (e) { self.setState({ searchQuery: e.target.value }); },
+      showCityPicker: self.state.showCityPicker,
+      toggleCityPicker: function () { self.setState({ showCityPicker: !self.state.showCityPicker }); },
+      activityChips: activityChips,
+      locationEnabled: self.state.locationEnabled,
+      locationDisabled: !self.state.locationEnabled,
+      enableLocation: function () { self.setState({ locationEnabled: true }); },
+      gyms: gymsForList,
+      noGymsFound: gymsForList.length === 0,
+      selectedGym: selectedGymForRender,
+      classes: classesForDetail,
+      noClasses: classesForDetail.length === 0,
+
+      // planes
+      showPlansList: self.state.activeTab === 'planes' && self.state.checkoutStep === 'none',
+      showCheckoutPayment: self.state.activeTab === 'planes' && self.state.checkoutStep === 'payment',
+      showCheckoutSuccess: self.state.activeTab === 'planes' && self.state.checkoutStep === 'success',
+      plans: plansForList,
+      checkoutPlan: checkoutPlan,
+      backToPlans: function () { self.setState({ checkoutStep: 'none' }); },
+      payCard: completePurchase,
+      payApple: completePurchase,
+      goToPerfilAfterPay: function () { self.setState({ activeTab: 'perfil', checkoutStep: 'none' }); },
+      goToPlanes: function () { self.setState({ activeTab: 'planes' }); },
+
+      // nosotros
+      tabNosotros: self.state.activeTab === 'nosotros',
+      faqs: faqsForList,
+
+      // reservas / perfil
+      tabReservas: self.state.activeTab === 'reservas',
+      tabPerfil: self.state.activeTab === 'perfil',
+      authed: self.state.authed,
+      notAuthed: !self.state.authed,
+      reservations: reservationsForList,
+      noReservations: reservationsForList.length === 0,
+      credits: self.state.credits,
+      activePlan: self.state.activePlan || { name: '', label: '' },
+      hasPlan: !!self.state.activePlan,
+      noPlan: !self.state.activePlan,
+      doLogout: function () { self.setState({ authed: false, activeTab: 'gyms', selectedGymId: null }); },
+
+      // auth overlay
+      showAuthOverlay: !!self.state.authOverlay,
+      isSignIn: self.state.authOverlay === 'signin',
+      isSignUp: self.state.authOverlay === 'signup',
+      privacyAccepted: self.state.privacyAccepted,
+      termsAccepted: self.state.termsAccepted,
+      privacyCheckBg: self.state.privacyAccepted ? '#ff4f3f' : '#ffffff',
+      termsCheckBg: self.state.termsAccepted ? '#ff4f3f' : '#ffffff',
+      togglePrivacy: function () { self.setState({ privacyAccepted: !self.state.privacyAccepted }); },
+      toggleTerms: function () { self.setState({ termsAccepted: !self.state.termsAccepted }); },
+      signUpButtonBg: (self.state.privacyAccepted && self.state.termsAccepted) ? '#ff4f3f' : '#ff4f3f66',
+      signUpSubmit: (self.state.privacyAccepted && self.state.termsAccepted) ? completeLogin : function () {},
+      openSignIn: function () { self.setState({ authOverlay: 'signin' }); },
+      openSignUp: function () { self.setState({ authOverlay: 'signup' }); },
+      switchToSignUp: function () { self.setState({ authOverlay: 'signup' }); },
+      switchToSignIn: function () { self.setState({ authOverlay: 'signin' }); },
+      closeAuthOverlay: function () { self.setState({ authOverlay: null, pendingPlanId: null }); },
+      doLogin: completeLogin
+    };
+  }
+}
+</script>
+</x-dc>
+</body>
+</html>
