@@ -23,7 +23,7 @@ function GuestPrompt() {
     <View style={styles.center}>
       <Text style={styles.title}>Mis reservas</Text>
       <Text style={styles.guestText}>
-        Iniciá sesión para ver las clases que reservaste.
+        Inicia sesión para ver las clases que reservaste.
       </Text>
       <Link href="/sign-in" asChild>
         <Pressable style={styles.button}>
@@ -74,7 +74,7 @@ function ReservationsList() {
       keyExtractor={(item) => item.id}
       ListEmptyComponent={
         <View style={styles.center}>
-          <Text style={styles.guestText}>Todavía no tenés clases reservadas.</Text>
+          <Text style={styles.guestText}>Todavía no tienes clases reservadas.</Text>
         </View>
       }
       renderItem={({ item }) => (

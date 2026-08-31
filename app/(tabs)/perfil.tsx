@@ -27,8 +27,8 @@ function GuestView() {
     <View style={styles.container}>
       <Text style={styles.title}>Tu cuenta</Text>
       <Text style={styles.guestText}>
-        Podés explorar los gimnasios sin cuenta. Para reservar clases y comprar créditos,
-        necesitás iniciar sesión o crear una cuenta.
+        Puedes explorar los gimnasios sin cuenta. Para reservar clases y comprar créditos,
+        necesitas iniciar sesión o crear una cuenta.
       </Text>
 
       <Link href="/sign-in" asChild>
@@ -114,7 +114,7 @@ function SignedInView() {
               )}
             </>
           ) : (
-            <Text style={styles.planMeta}>Todavía no tenés un plan activo.</Text>
+            <Text style={styles.planMeta}>Todavía no tienes un plan activo.</Text>
           )}
         </View>
       )}

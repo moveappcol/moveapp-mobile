@@ -80,7 +80,7 @@ export default function SignInScreen() {
       </Pressable>
 
       <Link href="/sign-up" style={styles.link}>
-        ¿No tenés cuenta? Creá una
+        ¿No tienes cuenta? Crea una
       </Link>
     </KeyboardAvoidingView>
   );

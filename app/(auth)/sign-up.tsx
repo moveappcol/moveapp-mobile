@@ -129,7 +129,7 @@ export default function SignUpScreen() {
       </Pressable>
 
       <Link href="/sign-in" style={styles.link}>
-        ¿Ya tenés cuenta? Iniciá sesión
+        ¿Ya tienes cuenta? Inicia sesión
       </Link>
     </KeyboardAvoidingView>
   );
