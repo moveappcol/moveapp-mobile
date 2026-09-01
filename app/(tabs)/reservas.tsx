@@ -1,6 +1,6 @@
 import { useAuth } from "@clerk/expo";
 import { Link } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { apiFetch } from "@/lib/api";
 
@@ -37,19 +37,52 @@ function GuestPrompt() {
 function ReservationsList() {
   const { getToken } = useAuth();
   const [state, setState] = useState<ScreenState>({ loading: true, error: null, reservations: [] });
+  const [cancelState, setCancelState] = useState<
+    Record<string, { loading: boolean; error: string | null }>
+  >({});
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const token = await getToken();
-        const data = await apiFetch<{ reservations: ReservationEntry[] }>("/me/reservas", token);
-        setState({ loading: false, error: null, reservations: data.reservations });
-      } catch {
-        setState({ loading: false, error: "No pudimos cargar tus reservas.", reservations: [] });
-      }
-    })();
+  const load = useCallback(async () => {
+    try {
+      const token = await getToken();
+      const data = await apiFetch<{ reservations: ReservationEntry[] }>("/me/reservas", token);
+      setState({ loading: false, error: null, reservations: data.reservations });
+    } catch {
+      setState({ loading: false, error: "No pudimos cargar tus reservas.", reservations: [] });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function cancelar(reservationId: string) {
+    setCancelState((prev) => ({ ...prev, [reservationId]: { loading: true, error: null } }));
+    try {
+      const token = await getToken();
+      const result = await apiFetch<{ ok: boolean; error?: string }>(
+        `/reservas/${reservationId}/cancelar`,
+        token,
+        { method: "POST" }
+      );
+      if (result.ok) {
+        await load();
+      } else {
+        setCancelState((prev) => ({
+          ...prev,
+          [reservationId]: { loading: false, error: result.error ?? "No pudimos cancelar." },
+        }));
+      }
+    } catch (err) {
+      setCancelState((prev) => ({
+        ...prev,
+        [reservationId]: {
+          loading: false,
+          error: err instanceof Error ? err.message : "No pudimos cancelar.",
+        },
+      }));
+    }
+  }
 
   if (state.loading) {
     return (
@@ -77,23 +110,41 @@ function ReservationsList() {
           <Text style={styles.guestText}>Todavía no tienes clases reservadas.</Text>
         </View>
       }
-      renderItem={({ item }) => (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            {item.clase?.name ?? "Clase"} — {item.gym?.name ?? "Gimnasio"}
-          </Text>
-          <Text style={styles.cardSubtitle}>
-            {item.fecha ? new Date(item.fecha).toLocaleString("es-CO") : "Sin fecha"}
-          </Text>
-          <Text style={styles.cardStatus}>{item.estado ?? "Reservado"}</Text>
-          {item.calificacion !== null && (
-            <Text style={styles.cardSubtitle}>
-              {"★".repeat(item.calificacion)}
-              {"☆".repeat(5 - item.calificacion)}
+      renderItem={({ item }) => {
+        const cancel = cancelState[item.id];
+        const puedeCancel = (item.estado ?? "Reservado") === "Reservado";
+        return (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>
+              {item.clase?.name ?? "Clase"} — {item.gym?.name ?? "Gimnasio"}
             </Text>
-          )}
-        </View>
-      )}
+            <Text style={styles.cardSubtitle}>
+              {item.fecha ? new Date(item.fecha).toLocaleString("es-CO") : "Sin fecha"}
+            </Text>
+            <Text style={styles.cardStatus}>{item.estado ?? "Reservado"}</Text>
+            {item.calificacion !== null && (
+              <Text style={styles.cardSubtitle}>
+                {"★".repeat(item.calificacion)}
+                {"☆".repeat(5 - item.calificacion)}
+              </Text>
+            )}
+            {cancel?.error && <Text style={styles.errorText}>{cancel.error}</Text>}
+            {puedeCancel && (
+              <Pressable
+                disabled={cancel?.loading}
+                onPress={() => cancelar(item.id)}
+                style={styles.cancelButton}
+              >
+                {cancel?.loading ? (
+                  <ActivityIndicator color="#ff4f3f" size="small" />
+                ) : (
+                  <Text style={styles.cancelButtonText}>Cancelar reserva</Text>
+                )}
+              </Pressable>
+            )}
+          </View>
+        );
+      }}
     />
   );
 }
@@ -142,4 +193,14 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginTop: 6,
   },
+  cancelButton: {
+    marginTop: 12,
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: "#ff4f3f",
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  cancelButtonText: { color: "#ff4f3f", fontSize: 13, fontWeight: "700" },
 });

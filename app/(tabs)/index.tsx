@@ -1,5 +1,6 @@
+import { Link } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { apiFetch } from "@/lib/api";
 
 type Gym = {
@@ -63,11 +64,13 @@ export default function GimnasiosScreen() {
         <Text style={styles.subtitle}>No hay gimnasios disponibles todavía.</Text>
       }
       renderItem={({ item }) => (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{item.name.trim()}</Text>
-          <Text style={styles.cardSubtitle}>{item.activities.join(", ")}</Text>
-          <Text style={styles.cardSubtitle}>{item.city}</Text>
-        </View>
+        <Link href={`/gimnasios/${item.id}`} asChild>
+          <Pressable style={styles.card}>
+            <Text style={styles.cardTitle}>{item.name.trim()}</Text>
+            <Text style={styles.cardSubtitle}>{item.activities.join(", ")}</Text>
+            <Text style={styles.cardSubtitle}>{item.city}</Text>
+          </Pressable>
+        </Link>
       )}
     />
   );
