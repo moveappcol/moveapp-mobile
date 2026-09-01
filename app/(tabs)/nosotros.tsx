@@ -92,7 +92,7 @@ function FaqItem({ q, a, isLast }: { q: string; a: string; isLast: boolean }) {
 export default function NosotrosScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Image source={require("@/assets/icon.png")} style={styles.logo} />
+      <Image source={require("@/assets/unique-logo.png")} style={styles.logo} />
 
       <Text style={styles.eyebrow}>Sobre nosotros</Text>
       <Text style={styles.title}>UNIQUE — Quiénes somos</Text>
