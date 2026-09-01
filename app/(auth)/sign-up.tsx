@@ -52,7 +52,7 @@ export default function SignUpScreen() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        router.replace("/");
+        router.replace("/completar-perfil");
       } else {
         setError("Código incorrecto o incompleto.");
       }
