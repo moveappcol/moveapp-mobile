@@ -1,7 +1,7 @@
 import { useAuth } from "@clerk/expo";
 import { Link } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiFetch } from "@/lib/api";
 
 type Clase = { id: string; name: string; fecha: string | null; duracionMinutos: number };
@@ -17,6 +17,87 @@ type ReservationEntry = {
 };
 
 type ScreenState = { loading: boolean; error: string | null; reservations: ReservationEntry[] };
+
+const RATING_WINDOW_HOURS = 24;
+
+function ratingWindowState(item: ReservationEntry): "puede-calificar" | "ya-califico" | "no-aplica" {
+  if (!item.clase?.fecha || item.estado?.startsWith("Cancelado")) return "no-aplica";
+  if (item.calificacion !== null) return "ya-califico";
+
+  const finClase = new Date(item.clase.fecha).getTime() + item.clase.duracionMinutos * 60_000;
+  const now = Date.now();
+  if (now < finClase || now > finClase + RATING_WINDOW_HOURS * 60 * 60 * 1000) return "no-aplica";
+  return "puede-calificar";
+}
+
+function RatingForm({
+  reservationId,
+  onRated,
+}: {
+  reservationId: string;
+  onRated: () => void;
+}) {
+  const { getToken } = useAuth();
+  const [calificacion, setCalificacion] = useState(0);
+  const [comentario, setComentario] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit() {
+    if (calificacion < 1) {
+      setError("Elige al menos 1 estrella.");
+      return;
+    }
+    setError(null);
+    setSubmitting(true);
+    try {
+      const token = await getToken();
+      const result = await apiFetch<{ ok: boolean; error?: string }>(
+        `/reservas/${reservationId}/calificar`,
+        token,
+        { method: "POST", body: { calificacion, comentario } }
+      );
+      if (result.ok) {
+        onRated();
+      } else {
+        setError(result.error ?? "No pudimos guardar tu calificación.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No pudimos guardar tu calificación.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <View style={styles.ratingBox}>
+      <Text style={styles.ratingLabel}>¿Cómo estuvo la clase? (opcional)</Text>
+      <View style={styles.starsRow}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <Pressable key={n} onPress={() => setCalificacion(n)} hitSlop={6}>
+            <Text style={[styles.star, calificacion >= n && styles.starActive]}>★</Text>
+          </Pressable>
+        ))}
+      </View>
+      <TextInput
+        style={styles.commentInput}
+        placeholder="Cuéntanos algo más (opcional)"
+        placeholderTextColor="#ffffff80"
+        value={comentario}
+        onChangeText={setComentario}
+        multiline
+      />
+      {error && <Text style={styles.errorText}>{error}</Text>}
+      <Pressable style={styles.ratingButton} onPress={submit} disabled={submitting}>
+        {submitting ? (
+          <ActivityIndicator color="#063009" size="small" />
+        ) : (
+          <Text style={styles.ratingButtonText}>Enviar</Text>
+        )}
+      </Pressable>
+    </View>
+  );
+}
 
 function GuestPrompt() {
   return (
@@ -113,6 +194,7 @@ function ReservationsList() {
       renderItem={({ item }) => {
         const cancel = cancelState[item.id];
         const puedeCancel = (item.estado ?? "Reservado") === "Reservado";
+        const rating = ratingWindowState(item);
         return (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>
@@ -122,11 +204,15 @@ function ReservationsList() {
               {item.fecha ? new Date(item.fecha).toLocaleString("es-CO") : "Sin fecha"}
             </Text>
             <Text style={styles.cardStatus}>{item.estado ?? "Reservado"}</Text>
-            {item.calificacion !== null && (
+            {rating === "ya-califico" && (
               <Text style={styles.cardSubtitle}>
-                {"★".repeat(item.calificacion)}
-                {"☆".repeat(5 - item.calificacion)}
+                {"★".repeat(item.calificacion ?? 0)}
+                {"☆".repeat(5 - (item.calificacion ?? 0))}
+                {item.comentario ? ` — "${item.comentario}"` : ""}
               </Text>
+            )}
+            {rating === "puede-calificar" && (
+              <RatingForm reservationId={item.id} onRated={load} />
             )}
             {cancel?.error && <Text style={styles.errorText}>{cancel.error}</Text>}
             {puedeCancel && (
@@ -202,4 +288,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   cancelButtonText: { color: "#ff4f3f", fontSize: 13, fontWeight: "700" },
+  ratingBox: {
+    marginTop: 14,
+    borderTopWidth: 1,
+    borderColor: "#ffffff22",
+    paddingTop: 14,
+  },
+  ratingLabel: { fontSize: 12, fontWeight: "700", color: "#fff" },
+  starsRow: { flexDirection: "row", gap: 6, marginTop: 8 },
+  star: { fontSize: 26, color: "#ffffff40" },
+  starActive: { color: "#d4ff3f" },
+  commentInput: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#ffffff33",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 13,
+    color: "#fff",
+    minHeight: 40,
+  },
+  ratingButton: {
+    marginTop: 10,
+    alignSelf: "flex-start",
+    backgroundColor: "#d4ff3f",
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+  },
+  ratingButtonText: { color: "#063009", fontSize: 13, fontWeight: "700" },
 });
