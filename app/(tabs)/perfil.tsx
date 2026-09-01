@@ -1,7 +1,7 @@
 import { useAuth, useUser } from "@clerk/expo";
 import { Link } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { apiFetch } from "@/lib/api";
 
 type CreditsResponse = { credits: number; vencimiento: string | null; perfilCompleto: boolean };
@@ -56,26 +56,56 @@ function SignedInView() {
     plan: null,
   });
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const token = await getToken();
-        const [credits, plan] = await Promise.all([
-          apiFetch<CreditsResponse>("/me/credits", token),
-          apiFetch<PlanResponse>("/me/plan", token),
-        ]);
-        setState({ loading: false, error: null, credits, plan });
-      } catch {
-        setState({
-          loading: false,
-          error: "No pudimos cargar tu cuenta.",
-          credits: null,
-          plan: null,
-        });
-      }
-    })();
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const token = await getToken();
+      const [credits, plan] = await Promise.all([
+        apiFetch<CreditsResponse>("/me/credits", token),
+        apiFetch<PlanResponse>("/me/plan", token),
+      ]);
+      setState({ loading: false, error: null, credits, plan });
+    } catch {
+      setState({
+        loading: false,
+        error: "No pudimos cargar tu cuenta.",
+        credits: null,
+        plan: null,
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  function confirmCancelPlan() {
+    Alert.alert(
+      "Cancelar plan",
+      "¿Seguro que quieres cancelar tu plan? Dejarás de renovar créditos cada mes.",
+      [
+        { text: "No", style: "cancel" },
+        { text: "Sí, cancelar", style: "destructive", onPress: cancelPlan },
+      ]
+    );
+  }
+
+  async function cancelPlan() {
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      const token = await getToken();
+      await apiFetch("/suscripcion/cancelar", token, { method: "POST" });
+      await load();
+    } catch (err) {
+      setCancelError(err instanceof Error ? err.message : "No pudimos cancelar tu plan.");
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -112,6 +142,20 @@ function SignedInView() {
                   próxima renovación
                 </Text>
               )}
+              {state.plan.estado === "Activa" && (
+                <Pressable
+                  style={styles.cancelPlanButton}
+                  onPress={confirmCancelPlan}
+                  disabled={cancelling}
+                >
+                  {cancelling ? (
+                    <ActivityIndicator color="#ff4f3f" size="small" />
+                  ) : (
+                    <Text style={styles.cancelPlanText}>Cancelar plan</Text>
+                  )}
+                </Pressable>
+              )}
+              {cancelError && <Text style={styles.cancelPlanError}>{cancelError}</Text>}
             </>
           ) : (
             <Text style={styles.planMeta}>Todavía no tienes un plan activo.</Text>
@@ -184,6 +228,17 @@ const styles = StyleSheet.create({
   },
   planName: { fontSize: 17, fontWeight: "700", color: "#fff" },
   planMeta: { fontSize: 13, color: "#ffffffb3", marginTop: 4 },
+  cancelPlanButton: {
+    marginTop: 16,
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: "#ff4f3f",
+    borderRadius: 999,
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+  },
+  cancelPlanText: { color: "#ff4f3f", fontSize: 13, fontWeight: "700" },
+  cancelPlanError: { color: "#ff4f3f", fontSize: 12, marginTop: 8 },
   button: {
     backgroundColor: "#ff4f3f",
     borderRadius: 999,

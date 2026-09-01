@@ -1,21 +1,52 @@
+import * as Location from "expo-location";
 import { Link } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { apiFetch } from "@/lib/api";
+import { distanceKm } from "@/lib/geo";
 
 type Gym = {
   id: string;
   name: string;
   city: string;
+  address: string;
   activities: string[];
+  lat: number | null;
+  lng: number | null;
+  photoUrl: string | null;
+  genero: "todos" | "solo_mujeres" | "solo_hombres";
 };
 
 type GymsResponse = { comingSoon: boolean; gyms: Gym[] };
 
 type ScreenState = { loading: boolean; error: string | null; data: GymsResponse | null };
 
+type GeoStatus = "idle" | "loading" | "denied" | "unsupported" | "success";
+
+function SearchIcon() {
+  return (
+    <View style={styles.searchIcon}>
+      <Text style={{ fontSize: 14 }}>🔍</Text>
+    </View>
+  );
+}
+
 export default function GimnasiosScreen() {
   const [state, setState] = useState<ScreenState>({ loading: true, error: null, data: null });
+  const [query, setQuery] = useState("");
+  const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+  const [showCityPicker, setShowCityPicker] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoStatus, setGeoStatus] = useState<GeoStatus>("idle");
 
   useEffect(() => {
     apiFetch<GymsResponse>("/gyms")
@@ -24,6 +55,64 @@ export default function GimnasiosScreen() {
         setState({ loading: false, error: "No pudimos cargar los gimnasios.", data: null })
       );
   }, []);
+
+  async function useMyLocation() {
+    setGeoStatus("loading");
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setGeoStatus("denied");
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({});
+      setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+      setGeoStatus("success");
+    } catch {
+      setGeoStatus("unsupported");
+    }
+  }
+
+  function toggleActivity(activity: string) {
+    setSelectedActivities((prev) =>
+      prev.includes(activity) ? prev.filter((a) => a !== activity) : [...prev, activity]
+    );
+  }
+
+  const gyms = state.data?.gyms ?? [];
+
+  const activityOptions = useMemo(
+    () => Array.from(new Set(gyms.flatMap((g) => g.activities))).sort(),
+    [gyms]
+  );
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+
+    let list = gyms
+      .filter((gym) =>
+        selectedActivities.length === 0
+          ? true
+          : selectedActivities.some((a) => gym.activities.includes(a))
+      )
+      .filter((gym) =>
+        q === ""
+          ? true
+          : [gym.name, gym.city, gym.address].some((f) => f.toLowerCase().includes(q))
+      )
+      .map((gym) => ({
+        ...gym,
+        distance:
+          userLocation && gym.lat !== null && gym.lng !== null
+            ? distanceKm(userLocation, { lat: gym.lat, lng: gym.lng })
+            : null,
+      }));
+
+    if (userLocation) {
+      list = list.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+    }
+
+    return list;
+  }, [gyms, query, selectedActivities, userLocation]);
 
   if (state.loading) {
     return (
@@ -36,7 +125,7 @@ export default function GimnasiosScreen() {
   if (state.error) {
     return (
       <View style={styles.center}>
-        <Text style={styles.error}>{state.error}</Text>
+        <Text style={styles.errorText}>{state.error}</Text>
       </View>
     );
   }
@@ -53,46 +142,254 @@ export default function GimnasiosScreen() {
     );
   }
 
-  const gyms = state.data?.gyms ?? [];
-
   return (
-    <FlatList
-      contentContainerStyle={styles.list}
-      data={gyms}
-      keyExtractor={(item) => item.id}
-      ListEmptyComponent={
-        <Text style={styles.subtitle}>No hay gimnasios disponibles todavía.</Text>
-      }
-      renderItem={({ item }) => (
-        <Link href={`/gimnasios/${item.id}`} asChild>
-          <Pressable style={styles.card}>
-            <Text style={styles.cardTitle}>{item.name.trim()}</Text>
-            <Text style={styles.cardSubtitle}>{item.activities.join(", ")}</Text>
-            <Text style={styles.cardSubtitle}>{item.city}</Text>
-          </Pressable>
-        </Link>
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <Text style={styles.wordmark}>UNIQUE</Text>
+      <Text style={styles.title}>Gimnasios afiliados</Text>
+      <Text style={styles.subtitle}>Busca gimnasios cerca de ti y filtra por actividad</Text>
+
+      <View style={styles.searchBar}>
+        <SearchIcon />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Buscar gimnasio..."
+          style={styles.searchInput}
+        />
+      </View>
+
+      <Pressable style={styles.cityButton} onPress={() => setShowCityPicker((v) => !v)}>
+        <Text style={styles.cityPin}>📍</Text>
+        <Text style={styles.cityButtonText}>Bogotá</Text>
+        <Text style={styles.cityChevron}>{showCityPicker ? "▲" : "▼"}</Text>
+      </Pressable>
+
+      {showCityPicker && (
+        <View style={styles.cityPicker}>
+          <View style={styles.cityPickerActive}>
+            <Text style={styles.cityPickerActiveText}>Bogotá</Text>
+            <Text style={styles.cityPickerCheck}>✓</Text>
+          </View>
+          <Text style={styles.cityPickerNote}>Muy pronto más ciudades</Text>
+        </View>
       )}
-    />
+
+      {activityOptions.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
+          {activityOptions.map((activity) => {
+            const active = selectedActivities.includes(activity);
+            return (
+              <Pressable
+                key={activity}
+                onPress={() => toggleActivity(activity)}
+                style={[styles.chip, active && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>{activity}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
+
+      {geoStatus === "success" && userLocation ? (
+        <View style={styles.locationBox}>
+          <Text style={styles.locationBoxText}>📍 Usando tu ubicación — Bogotá</Text>
+        </View>
+      ) : (
+        <View style={styles.locationPrompt}>
+          <Text style={styles.locationPromptText}>
+            Activa tu ubicación para ver qué tan cerca están los gimnasios
+          </Text>
+          <Pressable style={styles.locationButton} onPress={useMyLocation} disabled={geoStatus === "loading"}>
+            <Text style={styles.locationButtonText}>
+              {geoStatus === "loading" ? "Buscando…" : "Usar mi ubicación"}
+            </Text>
+          </Pressable>
+          {geoStatus === "denied" && (
+            <Text style={styles.locationError}>
+              No pudimos acceder a tu ubicación. Revisa los permisos de la app.
+            </Text>
+          )}
+        </View>
+      )}
+
+      <View style={styles.list}>
+        {results.map((gym) => {
+          const generoLabel =
+            gym.genero === "solo_mujeres"
+              ? "Gimnasio exclusivo para mujeres"
+              : gym.genero === "solo_hombres"
+                ? "Gimnasio exclusivo para hombres"
+                : null;
+          return (
+            <Link key={gym.id} href={`/gimnasios/${gym.id}`} asChild>
+              <Pressable style={styles.card}>
+                <View style={styles.photoWrap}>
+                  {gym.photoUrl ? (
+                    <Image source={{ uri: gym.photoUrl }} style={styles.photo} />
+                  ) : (
+                    <Text style={styles.photoPlaceholder}>Foto próximamente</Text>
+                  )}
+                </View>
+                <View style={styles.cardBody}>
+                  <View style={styles.cardHeaderRow}>
+                    <Text style={styles.cardTitle}>{gym.name.trim()}</Text>
+                    {gym.distance !== null && (
+                      <Text style={styles.cardDistance}>
+                        {gym.distance < 1
+                          ? `${Math.round(gym.distance * 1000)} m`
+                          : `${gym.distance.toFixed(1)} km`}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={styles.cardSubtitle}>{gym.activities.join(", ")}</Text>
+                  <Text style={styles.cardAddress}>{gym.address}</Text>
+                  {generoLabel && (
+                    <View style={styles.generoBadge}>
+                      <Text style={styles.generoBadgeText}>{generoLabel}</Text>
+                    </View>
+                  )}
+                </View>
+              </Pressable>
+            </Link>
+          );
+        })}
+
+        {results.length === 0 && (
+          <Text style={styles.subtitle}>No encontramos gimnasios con esos filtros.</Text>
+        )}
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
-  error: { color: "#ff4f3f", fontSize: 15 },
-  comingSoon: {
-    fontSize: 24,
-    fontWeight: "800",
+  container: { padding: 20, paddingBottom: 40 },
+  errorText: { color: "#ff4f3f", fontSize: 15 },
+  comingSoon: { fontSize: 24, fontWeight: "800", color: "#ff4f3f", textTransform: "uppercase" },
+  wordmark: { fontSize: 15, fontWeight: "700", color: "#063009" },
+  title: { fontSize: 20, fontWeight: "800", color: "#063009", marginTop: 10 },
+  subtitle: { fontSize: 13, color: "#06300999", marginTop: 4 },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#06300933",
+    borderRadius: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    marginTop: 16,
+  },
+  searchIcon: { width: 16, alignItems: "center" },
+  searchInput: { flex: 1, fontSize: 14, color: "#063009" },
+  cityButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    backgroundColor: "#06300908",
+    borderRadius: 999,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    marginTop: 12,
+  },
+  cityPin: { fontSize: 12 },
+  cityButtonText: { fontSize: 12, fontWeight: "700", color: "#063009" },
+  cityChevron: { fontSize: 9, color: "#063009" },
+  cityPicker: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#06300922",
+    borderRadius: 14,
+    padding: 6,
+  },
+  cityPickerActive: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#06300908",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  cityPickerActiveText: { fontSize: 13, fontWeight: "700", color: "#063009" },
+  cityPickerCheck: { color: "#ff4f3f", fontWeight: "700" },
+  cityPickerNote: { fontSize: 13, color: "#06300977", padding: 10 },
+  chipRow: { marginTop: 14, flexGrow: 0 },
+  chip: {
+    borderWidth: 1,
+    borderColor: "#06300922",
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    marginRight: 8,
+  },
+  chipActive: { backgroundColor: "#ff4f3f", borderColor: "#ff4f3f" },
+  chipText: { fontSize: 12, fontWeight: "700", color: "#06300999" },
+  chipTextActive: { color: "#fff" },
+  locationPrompt: {
+    marginTop: 16,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#06300933",
+    borderRadius: 16,
+    padding: 18,
+    alignItems: "center",
+  },
+  locationPromptText: { fontSize: 13, color: "#06300999", textAlign: "center", marginBottom: 10 },
+  locationButton: {
+    backgroundColor: "#063009",
+    borderRadius: 999,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+  },
+  locationButtonText: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  locationError: { color: "#ff4f3f", fontSize: 12, marginTop: 8, textAlign: "center" },
+  locationBox: {
+    marginTop: 16,
+    backgroundColor: "#06300908",
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  locationBoxText: { fontSize: 12, fontWeight: "700", color: "#063009" },
+  list: { marginTop: 20, gap: 14 },
+  card: { borderWidth: 1, borderColor: "#06300922", borderRadius: 18, overflow: "hidden" },
+  photoWrap: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+    backgroundColor: "#0630090d",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photo: { width: "100%", height: "100%" },
+  photoPlaceholder: {
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    color: "#06300966",
+  },
+  cardBody: { padding: 14 },
+  cardHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 },
+  cardTitle: { flex: 1, fontSize: 15, fontWeight: "700", color: "#063009" },
+  cardDistance: { fontSize: 12, fontWeight: "700", color: "#ff4f3f" },
+  cardSubtitle: { fontSize: 13, color: "#06300999", marginTop: 3 },
+  cardAddress: { fontSize: 12, color: "#0630097a", marginTop: 2 },
+  generoBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#ff4f3f1a",
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 9,
+    marginTop: 8,
+  },
+  generoBadgeText: {
     color: "#ff4f3f",
+    fontSize: 10.5,
+    fontWeight: "700",
     textTransform: "uppercase",
   },
-  subtitle: { fontSize: 14, color: "#06300999", textAlign: "center", marginTop: 8 },
-  list: { padding: 16 },
-  card: {
-    backgroundColor: "#063009",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-  },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: "#fff" },
-  cardSubtitle: { fontSize: 13, color: "#ffffffb3", marginTop: 4 },
 });

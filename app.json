@@ -27,7 +27,13 @@
     "plugins": [
       "expo-router",
       "@clerk/expo",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "UNIQUE usa tu ubicación para mostrarte qué tan cerca están los gimnasios."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

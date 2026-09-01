@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   faqQuestionText: { flex: 1, fontSize: 14, fontWeight: "700", color: "#fff", marginRight: 12 },
   faqQuestionTextOpen: { color: "#063009" },
-  faqIcon: { fontSize: 20, color: "#9be36b", fontWeight: "600" },
+  faqIcon: { fontSize: 20, color: "#d4ff3f", fontWeight: "600" },
   faqIconOpen: { color: "#ff4f3f" },
   faqAnswerBox: { paddingHorizontal: 18, paddingBottom: 18 },
   faqAnswerText: { fontSize: 13, lineHeight: 20, color: "#063009b3" },
