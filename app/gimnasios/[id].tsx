@@ -21,7 +21,51 @@ type Gym = {
   photoDetailUrls: string[];
   genero: "todos" | "solo_mujeres" | "solo_hombres";
   description: string | null;
+  puntualidad: string | null;
+  politicaCancelacion: string | null;
+  ropaCalzado: string | null;
+  materiales: string | null;
+  servicios: string[];
+  politicaMenores: string | null;
+  nivelRecomendado: string | null;
+  recomendaciones: string | null;
 };
+
+function InfoAccordion({ title, text }: { title: string; text: string | null }) {
+  const [open, setOpen] = useState(false);
+  if (!text) return null;
+  return (
+    <View style={styles.accordionItem}>
+      <Pressable style={styles.accordionHeader} onPress={() => setOpen((v) => !v)}>
+        <Text style={styles.accordionTitle}>{title}</Text>
+        <Text style={styles.accordionIcon}>{open ? "×" : "+"}</Text>
+      </Pressable>
+      {open && <Text style={styles.accordionText}>{text}</Text>}
+    </View>
+  );
+}
+
+function ServiciosAccordion({ servicios }: { servicios: string[] }) {
+  const [open, setOpen] = useState(false);
+  if (servicios.length === 0) return null;
+  return (
+    <View style={styles.accordionItem}>
+      <Pressable style={styles.accordionHeader} onPress={() => setOpen((v) => !v)}>
+        <Text style={styles.accordionTitle}>Servicios y amenidades</Text>
+        <Text style={styles.accordionIcon}>{open ? "×" : "+"}</Text>
+      </Pressable>
+      {open && (
+        <View style={styles.servicioChips}>
+          {servicios.map((servicio) => (
+            <View key={servicio} style={styles.servicioChip}>
+              <Text style={styles.servicioChipText}>{servicio}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
 
 type Clase = {
   id: string;
@@ -134,7 +178,17 @@ export default function GymDetailScreen() {
         <Text style={styles.subtitle}>{gym.activities.join(", ")}</Text>
         <Text style={styles.subtitle}>{gym.address}</Text>
 
-        {gym.description && <Text style={styles.description}>{gym.description}</Text>}
+        <View style={styles.accordionList}>
+          <InfoAccordion title="Descripción" text={gym.description} />
+          <InfoAccordion title="Puntualidad" text={gym.puntualidad} />
+          <InfoAccordion title="Política de cancelación" text={gym.politicaCancelacion} />
+          <InfoAccordion title="Ropa / calzado" text={gym.ropaCalzado} />
+          <InfoAccordion title="Materiales" text={gym.materiales} />
+          <ServiciosAccordion servicios={gym.servicios} />
+          <InfoAccordion title="Política para menores de edad" text={gym.politicaMenores} />
+          <InfoAccordion title="Nivel recomendado" text={gym.nivelRecomendado} />
+          <InfoAccordion title="Recomendaciones" text={gym.recomendaciones} />
+        </View>
 
         <Text style={styles.sectionTitle}>Clases disponibles</Text>
 
@@ -206,8 +260,28 @@ const styles = StyleSheet.create({
   badgeText: { color: "#ff4f3f", fontSize: 11, fontWeight: "700", textTransform: "uppercase" },
   title: { fontSize: 22, fontWeight: "800", color: "#063009" },
   subtitle: { fontSize: 14, color: "#06300999", marginTop: 4 },
-  description: { fontSize: 14, color: "#063009cc", marginTop: 12, lineHeight: 20 },
   sectionTitle: { fontSize: 17, fontWeight: "700", color: "#063009", marginTop: 24, marginBottom: 12 },
+  accordionList: { marginTop: 16, gap: 8 },
+  accordionItem: {
+    borderWidth: 1,
+    borderColor: "#06300922",
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  accordionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  accordionTitle: { fontSize: 14, fontWeight: "700", color: "#063009", flex: 1, marginRight: 12 },
+  accordionIcon: { fontSize: 18, fontWeight: "700", color: "#ff4f3f" },
+  accordionText: { fontSize: 13, lineHeight: 20, color: "#063009b3", marginTop: 10 },
+  servicioChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
+  servicioChip: {
+    borderWidth: 1,
+    borderColor: "#06300922",
+    borderRadius: 999,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+  },
+  servicioChipText: { fontSize: 12, color: "#063009b3" },
   card: {
     borderWidth: 1,
     borderColor: "#06300922",
