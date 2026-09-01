@@ -3,7 +3,9 @@ import { Link, Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
   Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +13,40 @@ import {
   View,
 } from "react-native";
 import { apiFetch } from "@/lib/api";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
+
+function PhotoViewer({
+  photos,
+  initialIndex,
+  onClose,
+}: {
+  photos: string[];
+  initialIndex: number;
+  onClose: () => void;
+}) {
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.viewerBackdrop}>
+        <Pressable style={styles.viewerClose} onPress={onClose} hitSlop={16}>
+          <Text style={styles.viewerCloseText}>×</Text>
+        </Pressable>
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          contentOffset={{ x: initialIndex * SCREEN_WIDTH, y: 0 }}
+        >
+          {photos.map((url) => (
+            <View key={url} style={styles.viewerPage}>
+              <Image source={{ uri: url }} style={styles.viewerImage} resizeMode="contain" />
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
 
 type Gym = {
   id: string;
@@ -88,6 +124,7 @@ export default function GymDetailScreen() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const [state, setState] = useState<ScreenState>({ loading: true, error: null, data: null });
   const [bookState, setBookState] = useState<BookState>({});
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const load = useCallback(() => {
     setState({ loading: true, error: null, data: null });
@@ -162,8 +199,10 @@ export default function GymDetailScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         {gym.photoDetailUrls.length > 0 && (
           <View style={styles.photoRow}>
-            {gym.photoDetailUrls.map((url) => (
-              <Image key={url} source={{ uri: url }} style={styles.photo} />
+            {gym.photoDetailUrls.map((url, index) => (
+              <Pressable key={url} onPress={() => setViewerIndex(index)}>
+                <Image source={{ uri: url }} style={styles.photo} />
+              </Pressable>
             ))}
           </View>
         )}
@@ -240,6 +279,14 @@ export default function GymDetailScreen() {
           );
         })}
       </ScrollView>
+
+      {viewerIndex !== null && (
+        <PhotoViewer
+          photos={gym.photoDetailUrls}
+          initialIndex={viewerIndex}
+          onClose={() => setViewerIndex(null)}
+        />
+      )}
     </>
   );
 }
@@ -248,6 +295,22 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
   container: { padding: 16 },
   photoRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
+  viewerBackdrop: { flex: 1, backgroundColor: "#000000ee", justifyContent: "center" },
+  viewerClose: {
+    position: "absolute",
+    top: 56,
+    right: 20,
+    zIndex: 1,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#ffffff22",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  viewerCloseText: { color: "#fff", fontSize: 22, lineHeight: 24 },
+  viewerPage: { width: SCREEN_WIDTH, alignItems: "center", justifyContent: "center" },
+  viewerImage: { width: SCREEN_WIDTH, height: "100%" },
   photo: { flex: 1, aspectRatio: 1, borderRadius: 16, backgroundColor: "#06300911" },
   badge: {
     alignSelf: "flex-start",
