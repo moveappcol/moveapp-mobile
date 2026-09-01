@@ -106,7 +106,7 @@ export default function PlanCheckoutScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: true, title: plan.name }} />
+      <Stack.Screen options={{ headerShown: true, title: plan.name, headerBackTitle: "Atrás" }} />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>{plan.name}</Text>
         <Text style={styles.subtitle}>{plan.label}</Text>

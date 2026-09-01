@@ -106,7 +106,7 @@ export default function TopupCheckoutScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: true, title: topup.label }} />
+      <Stack.Screen options={{ headerShown: true, title: topup.label, headerBackTitle: "Atrás" }} />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>{topup.label} adicionales</Text>
         <Text style={styles.price}>{formatCOP(topup.price)}</Text>

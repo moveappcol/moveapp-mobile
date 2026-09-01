@@ -195,7 +195,7 @@ export default function GymDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: true, title: gym.name.trim() }} />
+      <Stack.Screen options={{ headerShown: true, title: gym.name.trim(), headerBackTitle: "Atrás" }} />
       <ScrollView contentContainerStyle={styles.container}>
         {gym.photoDetailUrls.length > 0 && (
           <View style={styles.photoRow}>
