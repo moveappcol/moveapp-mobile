@@ -88,12 +88,11 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, color: "#06300999", textAlign: "center", marginTop: 8 },
   list: { padding: 16 },
   card: {
-    borderWidth: 1,
-    borderColor: "#06300922",
+    backgroundColor: "#063009",
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: "#063009" },
-  cardSubtitle: { fontSize: 13, color: "#06300999", marginTop: 4 },
+  cardTitle: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  cardSubtitle: { fontSize: 13, color: "#ffffffb3", marginTop: 4 },
 });
