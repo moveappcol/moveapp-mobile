@@ -107,11 +107,18 @@ type Clase = {
   id: string;
   name: string;
   credits: number;
+  descuentoCreditos: number | null;
   cuposTotales: number;
   cuposDisponibles: number;
   fecha: string | null;
   duracionMinutos: number;
 };
+
+function precioEfectivo(clase: Clase): number {
+  return clase.descuentoCreditos !== null && clase.descuentoCreditos < clase.credits
+    ? clase.descuentoCreditos
+    : clase.credits;
+}
 
 type GymDetailResponse = { gym: Gym; classes: Clase[] };
 
@@ -245,7 +252,10 @@ export default function GymDetailScreen() {
                 {clase.fecha ? new Date(clase.fecha).toLocaleString("es-CO") : "Sin fecha"}
               </Text>
               <Text style={styles.cardSubtitle}>
-                {clase.credits} créditos · {clase.cuposDisponibles}/{clase.cuposTotales} cupos
+                {precioEfectivo(clase) < clase.credits && (
+                  <Text style={styles.creditsStrikethrough}>{clase.credits} </Text>
+                )}
+                {precioEfectivo(clase)} créditos · {clase.cuposDisponibles}/{clase.cuposTotales} cupos
               </Text>
 
               {book?.error && <Text style={styles.errorText}>{book.error}</Text>}
@@ -355,6 +365,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 15, fontWeight: "700", color: "#063009" },
   cardSubtitle: { fontSize: 13, color: "#06300999", marginTop: 4 },
+  creditsStrikethrough: { textDecorationLine: "line-through", color: "#06300966" },
   errorText: { color: "#ff4f3f", fontSize: 13, marginTop: 8 },
   successText: { color: "#0a8a3f", fontSize: 13, marginTop: 8, fontWeight: "700" },
   button: {
