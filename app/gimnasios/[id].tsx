@@ -200,7 +200,7 @@ export default function GymDetailScreen() {
         {gym.photoDetailUrls.length > 0 && (
           <View style={styles.photoRow}>
             {gym.photoDetailUrls.map((url, index) => (
-              <Pressable key={url} onPress={() => setViewerIndex(index)}>
+              <Pressable key={url} style={styles.photoPressable} onPress={() => setViewerIndex(index)}>
                 <Image source={{ uri: url }} style={styles.photo} />
               </Pressable>
             ))}
@@ -311,7 +311,8 @@ const styles = StyleSheet.create({
   viewerCloseText: { color: "#fff", fontSize: 22, lineHeight: 24 },
   viewerPage: { width: SCREEN_WIDTH, alignItems: "center", justifyContent: "center" },
   viewerImage: { width: SCREEN_WIDTH, height: "100%" },
-  photo: { flex: 1, aspectRatio: 1, borderRadius: 16, backgroundColor: "#06300911" },
+  photoPressable: { flex: 1 },
+  photo: { width: "100%", aspectRatio: 1, borderRadius: 16, backgroundColor: "#06300911" },
   badge: {
     alignSelf: "flex-start",
     backgroundColor: "#ff4f3f1a",

@@ -67,6 +67,11 @@ export default function PlanesScreen() {
           </View>
         </View>
       )}
+
+      <Text style={styles.disclaimer}>
+        Puedes cancelar las clases hasta 24h antes sin costo. Para promover la diversidad de la
+        red, puedes acceder a cada gimnasio un máximo de 3 veces al mes.
+      </Text>
     </ScrollView>
   );
 }
@@ -123,4 +128,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     overflow: "hidden",
   },
+  disclaimer: { fontSize: 12, color: "#06300999", marginTop: 24, lineHeight: 18 },
 });

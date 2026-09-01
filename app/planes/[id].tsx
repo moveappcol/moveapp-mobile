@@ -204,6 +204,11 @@ export default function PlanCheckoutScreen() {
               </Text>
             </View>
 
+            <Text style={styles.disclaimer}>
+              Puedes cancelar tus clases hasta 24h antes sin costo. Para promover la diversidad de
+              la red, puedes acceder a cada gimnasio un máximo de 3 veces al mes.
+            </Text>
+
             {error && <Text style={styles.errorText}>{error}</Text>}
 
             <Pressable
@@ -248,6 +253,7 @@ const styles = StyleSheet.create({
   acceptRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 20 },
   acceptText: { flex: 1, fontSize: 12, color: "#06300999", lineHeight: 18 },
   linkText: { color: "#ff4f3f" },
+  disclaimer: { fontSize: 11.5, color: "#06300977", marginTop: 16, lineHeight: 17 },
   errorText: { color: "#ff4f3f", fontSize: 13, marginTop: 12 },
   successText: { color: "#0a8a3f", fontSize: 15, fontWeight: "600", marginTop: 24, lineHeight: 22 },
   button: {
