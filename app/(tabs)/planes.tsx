@@ -1,10 +1,33 @@
+import { useAuth } from "@clerk/expo";
 import { Link } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { CREDIT_PLANS, formatCOP } from "@/lib/credits-pricing";
+import { useEffect, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { apiFetch } from "@/lib/api";
+import { CREDIT_PLANS, CREDIT_TOPUPS, formatCOP } from "@/lib/credits-pricing";
+
+type PlanResponse =
+  | { hasSubscription: false }
+  | { hasSubscription: true; estado: string; plan: unknown; proximoCobro: string | null; planSiguiente: unknown };
 
 export default function PlanesScreen() {
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const [hasActivePlan, setHasActivePlan] = useState(false);
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+    (async () => {
+      try {
+        const token = await getToken();
+        const plan = await apiFetch<PlanResponse>("/me/plan", token);
+        setHasActivePlan(plan.hasSubscription && plan.estado === "Activa");
+      } catch {
+        setHasActivePlan(false);
+      }
+    })();
+  }, [isLoaded, isSignedIn, getToken]);
+
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Planes</Text>
       <Text style={styles.subtitle}>Elige tu plan mensual de créditos.</Text>
 
@@ -20,12 +43,36 @@ export default function PlanesScreen() {
           </Link>
         </View>
       ))}
-    </View>
+
+      {hasActivePlan && (
+        <View style={styles.topupsSection}>
+          <Text style={styles.topupsTitle}>Créditos adicionales</Text>
+          <Text style={styles.subtitle}>
+            ¿Se te acabaron los créditos antes de fin de mes? Suma más sin esperar a tu próximo
+            ciclo.
+          </Text>
+
+          <View style={styles.topupsList}>
+            {CREDIT_TOPUPS.map((topup) => (
+              <Link key={topup.id} href={`/creditos/${topup.id}`} asChild>
+                <Pressable style={styles.topupRow}>
+                  <View>
+                    <Text style={styles.topupLabel}>{topup.label}</Text>
+                    <Text style={styles.topupPrice}>{formatCOP(topup.price)}</Text>
+                  </View>
+                  <Text style={styles.topupButtonText}>Comprar</Text>
+                </Pressable>
+              </Link>
+            ))}
+          </View>
+        </View>
+      )}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { padding: 16, paddingBottom: 40 },
   title: { fontSize: 22, fontWeight: "800", color: "#063009" },
   subtitle: { fontSize: 14, color: "#06300999", marginTop: 4, marginBottom: 20 },
   card: {
@@ -51,4 +98,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  topupsSection: { marginTop: 12 },
+  topupsTitle: { fontSize: 18, fontWeight: "700", color: "#063009" },
+  topupsList: { marginTop: 16, gap: 10 },
+  topupRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#06300922",
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+  },
+  topupLabel: { fontSize: 14, fontWeight: "700", color: "#063009" },
+  topupPrice: { fontSize: 13, fontWeight: "700", color: "#ff4f3f", marginTop: 2 },
+  topupButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#fff",
+    backgroundColor: "#063009",
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    overflow: "hidden",
+  },
 });
