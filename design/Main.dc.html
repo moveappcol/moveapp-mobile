@@ -102,6 +102,9 @@
               </div>
               <div style="font-size:13px; color:#06300999; margin-top:3px;">{{gym.activitiesLabel}}</div>
               <div style="font-size:12px; color:#0630097a; margin-top:2px;">{{gym.address}}</div>
+              <sc-if value="{{gym.hasGeneroLabel}}" hint-placeholder-val="{{false}}">
+                <span style="display:inline-block; margin-top:8px; background:#ff4f3f1a; color:#ff4f3f; font-family:'Poppins',sans-serif; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; padding:4px 9px; border-radius:999px;">{{gym.generoLabel}}</span>
+              </sc-if>
             </div>
           </div>
         </sc-for>
@@ -113,16 +116,32 @@
 
     <!-- ===================== GIMNASIO: DETALLE ===================== -->
     <sc-if value="{{showGymDetail}}" hint-placeholder-val="{{false}}">
-      <div style="width:100%; aspect-ratio:16/9; background:#0630090d; display:flex; align-items:center; justify-content:center; position:relative;">
-        <span style="font-family:'Poppins',sans-serif; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#06300966;">Foto próximamente</span>
-        <button onClick="{{backToList}}" style="position:absolute; top:16px; left:16px; width:34px; height:34px; border-radius:999px; background:#ffffffee; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+      <div style="padding:16px 20px 0;">
+        <button onClick="{{backToList}}" style="background:none; border:none; display:flex; align-items:center; gap:6px; color:#063009; font-size:14px; font-weight:600; padding:0; cursor:pointer;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#063009" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Gimnasios
         </button>
       </div>
       <div style="padding:20px 20px 32px;">
         <div style="font-family:'Poppins',sans-serif; font-weight:700; font-size:12px; color:#06300999; text-transform:uppercase; letter-spacing:0.5px;">{{selectedGym.activitiesLabel}}</div>
         <div style="font-family:'Poppins',sans-serif; font-weight:800; font-size:23px; color:#063009; margin-top:4px;">{{selectedGym.name}}</div>
         <div style="font-size:13px; color:#06300999; margin-top:4px;">{{selectedGym.address}}, {{selectedGym.city}}</div>
+
+        <sc-if value="{{selectedGym.hasGeneroLabel}}" hint-placeholder-val="{{false}}">
+          <span style="display:inline-block; margin-top:10px; background:#ff4f3f1a; color:#ff4f3f; font-family:'Poppins',sans-serif; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; padding:5px 11px; border-radius:999px;">{{selectedGym.generoLabel}}</span>
+        </sc-if>
+
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:16px;">
+          <div style="aspect-ratio:1; border-radius:14px; background:#0630090d; display:flex; align-items:center; justify-content:center;">
+            <span style="font-family:'Poppins',sans-serif; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; color:#06300966; text-align:center; padding:0 4px;">Foto próximamente</span>
+          </div>
+          <div style="aspect-ratio:1; border-radius:14px; background:#0630090d; display:flex; align-items:center; justify-content:center;">
+            <span style="font-family:'Poppins',sans-serif; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; color:#06300966; text-align:center; padding:0 4px;">Foto próximamente</span>
+          </div>
+          <div style="aspect-ratio:1; border-radius:14px; background:#0630090d; display:flex; align-items:center; justify-content:center;">
+            <span style="font-family:'Poppins',sans-serif; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; color:#06300966; text-align:center; padding:0 4px;">Foto próximamente</span>
+          </div>
+        </div>
 
         <sc-if value="{{selectedGym.hasDescription}}" hint-placeholder-val="{{true}}">
           <div style="font-size:14px; color:#063009cc; margin-top:16px; line-height:1.55;">{{selectedGym.description}}</div>
@@ -399,6 +418,15 @@
             <span onClick="{{toggleTerms}}" style="font-size:12px; color:#063009cc; line-height:1.4; cursor:pointer;">He leído y acepto los Términos y Condiciones de Uso de UNIQUE.</span>
           </div>
 
+          <div style="margin-top:8px;">
+            <span style="font-size:12px; font-weight:700; color:#063009;">Género</span>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <sc-for list="{{generoOptions}}" as="g" hint-placeholder-count="3">
+                <button onClick="{{g.pick}}" style="flex:1; border:1px solid #06300933; border-radius:999px; padding:10px 0; font-family:'Poppins',sans-serif; font-weight:700; font-size:12px; cursor:pointer; background:{{g.bg}}; color:{{g.color}};">{{g.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+
           <button onClick="{{signUpSubmit}}" style="margin-top:10px; background:{{signUpButtonBg}}; color:#fff; border:none; border-radius:999px; padding:16px; font-family:'Poppins',sans-serif; font-weight:700; font-size:15px; cursor:pointer;">Crear cuenta</button>
           <a href="#" onClick="{{switchToSignIn}}" style="text-align:center; font-size:14px; font-weight:600; margin-top:6px;">¿Ya tienes cuenta? Inicia sesión</a>
         </div>
@@ -419,6 +447,8 @@ class Component extends DCLogic {
       pendingPlanId: null,
       privacyAccepted: false,
       termsAccepted: false,
+      genero: null,
+      signUpGenero: null,
 
       searchQuery: '',
       activityFilter: null,
@@ -452,10 +482,11 @@ class Component extends DCLogic {
           { id: 'c3', name: 'HIIT + Boxeo', horario: 'Miércoles 6:30 pm', credits: 10, cupos: '8/12 cupos' }
         ]
       },
-      { id: 'gym3', name: 'Gym 3', activities: ['Pilates'], city: 'Bogotá', address: 'Cl. 95 #13-87', distance: '1.4 km', description: '', classes: [] },
-      { id: 'gym4', name: 'Gym 4', activities: ['Cycling', 'Yoga', 'Pilates'], city: 'Bogotá', address: 'Cl. 72 #5-22, Tercer piso', distance: '2.1 km', description: '', classes: [] },
+      { id: 'gym3', name: 'Gym 3', activities: ['Pilates'], city: 'Bogotá', address: 'Cl. 95 #13-87', distance: '1.4 km', description: '', genero: 'solo_mujeres', classes: [] },
+      { id: 'gym4', name: 'Gym 4', activities: ['Cycling', 'Yoga', 'Pilates'], city: 'Bogotá', address: 'Cl. 72 #5-22, Tercer piso', distance: '2.1 km', description: '', genero: 'solo_hombres', classes: [] },
       { id: 'gym2', name: 'Gym 2', activities: ['Yoga'], city: 'Bogotá', address: 'Calle 69A #4-72', distance: '3.0 km', description: '', classes: [] }
     ];
+    gymsData.forEach(function (g) { if (!g.genero) g.genero = 'todos'; });
 
     var plansData = [
       { id: 'plan-starter', name: 'Starter', label: '32 créditos', price: '$230.000', credits: 32, popular: false },
@@ -481,16 +512,29 @@ class Component extends DCLogic {
     var searchQuery = (self.state.searchQuery || '').toLowerCase();
     var activityFilter = self.state.activityFilter;
 
+    var userGenero = self.state.genero; // null (invitado) | 'hombre' | 'mujer' | 'otro'
+
     var filteredGyms = gymsData.filter(function (g) {
       var matchesSearch = !searchQuery || g.name.toLowerCase().indexOf(searchQuery) !== -1;
       var matchesActivity = !activityFilter || g.activities.indexOf(activityFilter) !== -1;
-      return matchesSearch && matchesActivity;
+      var matchesGenero =
+        (userGenero === 'hombre' && g.genero === 'solo_mujeres') ? false :
+        (userGenero === 'mujer' && g.genero === 'solo_hombres') ? false : true;
+      return matchesSearch && matchesActivity && matchesGenero;
     });
+
+    function generoLabelFor(g) {
+      if (g.genero === 'solo_mujeres') return 'Gimnasio exclusivo para mujeres';
+      if (g.genero === 'solo_hombres') return 'Gimnasio exclusivo para hombres';
+      return null;
+    }
 
     var gymsForList = filteredGyms.map(function (g) {
       return Object.assign({}, g, {
         activitiesLabel: g.activities.join(', '),
         showDistance: self.state.locationEnabled,
+        generoLabel: generoLabelFor(g),
+        hasGeneroLabel: !!generoLabelFor(g),
         select: function () { self.setState({ selectedGymId: g.id }); }
       });
     });
@@ -538,8 +582,10 @@ class Component extends DCLogic {
 
     var selectedGymForRender = selectedGym ? Object.assign({}, selectedGym, {
       activitiesLabel: selectedGym.activities.join(', '),
-      hasDescription: selectedGym.description.length > 0
-    }) : { name: '', activitiesLabel: '', address: '', city: '', description: '', hasDescription: false };
+      hasDescription: selectedGym.description.length > 0,
+      generoLabel: generoLabelFor(selectedGym),
+      hasGeneroLabel: !!generoLabelFor(selectedGym)
+    }) : { name: '', activitiesLabel: '', address: '', city: '', description: '', hasDescription: false, generoLabel: null, hasGeneroLabel: false };
 
     // ---- Reservas ----
     var reservationsForList = self.state.reservations.map(function (r) {
@@ -582,17 +628,35 @@ class Component extends DCLogic {
       });
     }
 
-    function completeLogin() {
+    function completeLoginWithGenero(genero) {
       var pendingPlanId = self.state.pendingPlanId;
+      var patch = { genero: genero };
       if (pendingPlanId) {
-        self.setState({
+        Object.assign(patch, {
           authed: true, authOverlay: null, pendingPlanId: null,
           activeTab: 'planes', selectedPlanId: pendingPlanId, checkoutStep: 'payment'
         });
       } else {
-        self.setState({ authed: true, authOverlay: null });
+        Object.assign(patch, { authed: true, authOverlay: null });
       }
+      self.setState(patch);
     }
+
+    function pickSignUpGenero(g) {
+      return function () { self.setState({ signUpGenero: g }); };
+    }
+
+    var canSubmitSignUp = self.state.privacyAccepted && self.state.termsAccepted && !!self.state.signUpGenero;
+    var generoOptions = ['hombre', 'mujer', 'otro'].map(function (g) {
+      return {
+        value: g,
+        label: g === 'hombre' ? 'Hombre' : g === 'mujer' ? 'Mujer' : 'Otro',
+        active: self.state.signUpGenero === g,
+        bg: self.state.signUpGenero === g ? '#063009' : '#ffffff',
+        color: self.state.signUpGenero === g ? '#ffffff' : '#063009',
+        pick: pickSignUpGenero(g)
+      };
+    });
 
     // ---- FAQ ----
     var faqsForList = faqsData.map(function (f) {
@@ -682,14 +746,15 @@ class Component extends DCLogic {
       termsCheckBg: self.state.termsAccepted ? '#ff4f3f' : '#ffffff',
       togglePrivacy: function () { self.setState({ privacyAccepted: !self.state.privacyAccepted }); },
       toggleTerms: function () { self.setState({ termsAccepted: !self.state.termsAccepted }); },
-      signUpButtonBg: (self.state.privacyAccepted && self.state.termsAccepted) ? '#ff4f3f' : '#ff4f3f66',
-      signUpSubmit: (self.state.privacyAccepted && self.state.termsAccepted) ? completeLogin : function () {},
+      generoOptions: generoOptions,
+      signUpButtonBg: canSubmitSignUp ? '#ff4f3f' : '#ff4f3f66',
+      signUpSubmit: canSubmitSignUp ? function () { completeLoginWithGenero(self.state.signUpGenero); } : function () {},
       openSignIn: function () { self.setState({ authOverlay: 'signin' }); },
       openSignUp: function () { self.setState({ authOverlay: 'signup' }); },
       switchToSignUp: function () { self.setState({ authOverlay: 'signup' }); },
       switchToSignIn: function () { self.setState({ authOverlay: 'signin' }); },
       closeAuthOverlay: function () { self.setState({ authOverlay: null, pendingPlanId: null }); },
-      doLogin: completeLogin
+      doLogin: function () { completeLoginWithGenero('otro'); }
     };
   }
 }
