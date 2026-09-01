@@ -70,10 +70,10 @@ function FaqItem({ q, a, isLast }: { q: string; a: string; isLast: boolean }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <View style={styles.faqItem}>
+    <View style={[styles.faqItem, open ? styles.faqItemOpen : styles.faqItemClosed]}>
       <Pressable style={styles.faqQuestion} onPress={() => setOpen((v) => !v)}>
-        <Text style={styles.faqQuestionText}>{q}</Text>
-        <Text style={styles.faqIcon}>{open ? "×" : "+"}</Text>
+        <Text style={[styles.faqQuestionText, open && styles.faqQuestionTextOpen]}>{q}</Text>
+        <Text style={[styles.faqIcon, open && styles.faqIconOpen]}>{open ? "×" : "+"}</Text>
       </Pressable>
       {open && (
         <View style={styles.faqAnswerBox}>
@@ -141,8 +141,16 @@ const styles = StyleSheet.create({
   faqItem: {
     marginTop: 12,
     borderRadius: 16,
-    backgroundColor: "#0630090d",
     overflow: "hidden",
+  },
+  faqItemClosed: { backgroundColor: "#063009" },
+  faqItemOpen: {
+    backgroundColor: "#fff",
+    shadowColor: "#063009",
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   faqQuestion: {
     flexDirection: "row",
@@ -151,8 +159,10 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 18,
   },
-  faqQuestionText: { flex: 1, fontSize: 14, fontWeight: "700", color: "#063009", marginRight: 12 },
-  faqIcon: { fontSize: 20, color: "#ff4f3f", fontWeight: "600" },
+  faqQuestionText: { flex: 1, fontSize: 14, fontWeight: "700", color: "#fff", marginRight: 12 },
+  faqQuestionTextOpen: { color: "#063009" },
+  faqIcon: { fontSize: 20, color: "#9be36b", fontWeight: "600" },
+  faqIconOpen: { color: "#ff4f3f" },
   faqAnswerBox: { paddingHorizontal: 18, paddingBottom: 18 },
   faqAnswerText: { fontSize: 13, lineHeight: 20, color: "#063009b3" },
   contactLink: { marginTop: 10, fontSize: 13, fontWeight: "700", color: "#ff4f3f" },
