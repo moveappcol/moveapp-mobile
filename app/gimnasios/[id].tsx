@@ -255,8 +255,15 @@ export default function GymDetailScreen() {
                 {precioEfectivo(clase) < clase.credits && (
                   <Text style={styles.creditsStrikethrough}>{clase.credits} </Text>
                 )}
-                {precioEfectivo(clase)} créditos · {clase.cuposDisponibles}/{clase.cuposTotales} cupos
+                {precioEfectivo(clase)} créditos
               </Text>
+              {clase.cuposDisponibles > 0 && clase.cuposDisponibles <= 2 && (
+                <Text style={styles.cuposAviso}>
+                  {clase.cuposDisponibles === 1
+                    ? "Último cupo disponible"
+                    : "Últimos 2 cupos disponibles"}
+                </Text>
+              )}
 
               {book?.error && <Text style={styles.errorText}>{book.error}</Text>}
               {book?.ok && <Text style={styles.successText}>¡Reservado!</Text>}
@@ -366,6 +373,14 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 15, fontWeight: "700", color: "#063009" },
   cardSubtitle: { fontSize: 13, color: "#06300999", marginTop: 4 },
   creditsStrikethrough: { textDecorationLine: "line-through", color: "#06300966" },
+  cuposAviso: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#dc2626",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+    marginTop: 4,
+  },
   errorText: { color: "#ff4f3f", fontSize: 13, marginTop: 8 },
   successText: { color: "#0a8a3f", fontSize: 13, marginTop: 8, fontWeight: "700" },
   button: {
