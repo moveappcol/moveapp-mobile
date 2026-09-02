@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { apiFetch } from "@/lib/api";
+import { getCached, setCached } from "@/lib/cache";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
@@ -129,22 +130,38 @@ type BookState = Record<string, { loading: boolean; error: string | null; ok: bo
 export default function GymDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isLoaded, isSignedIn, getToken } = useAuth();
-  const [state, setState] = useState<ScreenState>({ loading: true, error: null, data: null });
+  const cacheKey = `gimnasio:${id}`;
+  const cached = getCached<GymDetailResponse>(cacheKey);
+  const [state, setState] = useState<ScreenState>({
+    loading: !cached,
+    error: null,
+    data: cached ?? null,
+  });
   const [bookState, setBookState] = useState<BookState>({});
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const load = useCallback(() => {
-    setState({ loading: true, error: null, data: null });
+    setState((prev) => ({ ...prev, loading: !prev.data, error: null }));
     apiFetch<GymDetailResponse>(`/gimnasios/${id}`)
-      .then((data) => setState({ loading: false, error: null, data }))
+      .then((data) => {
+        setCached(cacheKey, data);
+        setState({ loading: false, error: null, data });
+        for (const url of data.gym.photoDetailUrls) Image.prefetch(url);
+      })
       .catch(() =>
-        setState({ loading: false, error: "No pudimos cargar este gimnasio.", data: null })
+        setState((prev) =>
+          prev.data
+            ? { ...prev, loading: false }
+            : { loading: false, error: "No pudimos cargar este gimnasio.", data: null }
+        )
       );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {
     load();
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   async function reservar(claseId: string) {
     setBookState((prev) => ({ ...prev, [claseId]: { loading: true, error: null, ok: false } }));

@@ -3,6 +3,9 @@ import { Link } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { apiFetch } from "@/lib/api";
+import { getCached, setCached } from "@/lib/cache";
+
+const CACHE_KEY = "perfil";
 
 type CreditsResponse = { credits: number; vencimiento: string | null; perfilCompleto: boolean };
 type PlanInfo = { id: string; name?: string; label: string; price: number };
@@ -49,11 +52,12 @@ function GuestView() {
 function SignedInView() {
   const { getToken, signOut } = useAuth();
   const { user } = useUser();
+  const cached = getCached<{ credits: CreditsResponse; plan: PlanResponse }>(CACHE_KEY);
   const [state, setState] = useState<ScreenState>({
-    loading: true,
+    loading: !cached,
     error: null,
-    credits: null,
-    plan: null,
+    credits: cached?.credits ?? null,
+    plan: cached?.plan ?? null,
   });
 
   const [cancelling, setCancelling] = useState(false);
@@ -66,14 +70,14 @@ function SignedInView() {
         apiFetch<CreditsResponse>("/me/credits", token),
         apiFetch<PlanResponse>("/me/plan", token),
       ]);
+      setCached(CACHE_KEY, { credits, plan });
       setState({ loading: false, error: null, credits, plan });
     } catch {
-      setState({
-        loading: false,
-        error: "No pudimos cargar tu cuenta.",
-        credits: null,
-        plan: null,
-      });
+      setState((prev) =>
+        prev.credits
+          ? { ...prev, loading: false }
+          : { loading: false, error: "No pudimos cargar tu cuenta.", credits: null, plan: null }
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -3,7 +3,10 @@ import { Link } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { apiFetch } from "@/lib/api";
+import { getCached, setCached } from "@/lib/cache";
 import { CREDIT_PLANS, CREDIT_TOPUPS, formatCOP } from "@/lib/credits-pricing";
+
+const CACHE_KEY = "hasActivePlan";
 
 type PlanResponse =
   | { hasSubscription: false }
@@ -11,7 +14,7 @@ type PlanResponse =
 
 export default function PlanesScreen() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
-  const [hasActivePlan, setHasActivePlan] = useState(false);
+  const [hasActivePlan, setHasActivePlan] = useState(() => getCached<boolean>(CACHE_KEY) ?? false);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
@@ -19,9 +22,11 @@ export default function PlanesScreen() {
       try {
         const token = await getToken();
         const plan = await apiFetch<PlanResponse>("/me/plan", token);
-        setHasActivePlan(plan.hasSubscription && plan.estado === "Activa");
+        const active = plan.hasSubscription && plan.estado === "Activa";
+        setCached(CACHE_KEY, active);
+        setHasActivePlan(active);
       } catch {
-        setHasActivePlan(false);
+        // dejamos el valor en caché (o false) tal como estaba
       }
     })();
   }, [isLoaded, isSignedIn, getToken]);

@@ -12,7 +12,10 @@ import {
   View,
 } from "react-native";
 import { apiFetch } from "@/lib/api";
+import { getCached, setCached } from "@/lib/cache";
 import { distanceKm } from "@/lib/geo";
+
+const CACHE_KEY = "gyms";
 
 type Gym = {
   id: string;
@@ -41,7 +44,12 @@ function SearchIcon() {
 }
 
 export default function GimnasiosScreen() {
-  const [state, setState] = useState<ScreenState>({ loading: true, error: null, data: null });
+  const cached = getCached<GymsResponse>(CACHE_KEY);
+  const [state, setState] = useState<ScreenState>({
+    loading: !cached,
+    error: null,
+    data: cached ?? null,
+  });
   const [query, setQuery] = useState("");
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [showCityPicker, setShowCityPicker] = useState(false);
@@ -50,11 +58,23 @@ export default function GimnasiosScreen() {
 
   useEffect(() => {
     apiFetch<GymsResponse>("/gyms")
-      .then((data) => setState({ loading: false, error: null, data }))
-      .catch(() =>
-        setState({ loading: false, error: "No pudimos cargar los gimnasios.", data: null })
-      );
+      .then((data) => {
+        setCached(CACHE_KEY, data);
+        setState({ loading: false, error: null, data });
+      })
+      .catch(() => {
+        if (!cached) {
+          setState({ loading: false, error: "No pudimos cargar los gimnasios.", data: null });
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    for (const gym of state.data?.gyms ?? []) {
+      if (gym.photoUrl) Image.prefetch(gym.photoUrl);
+    }
+  }, [state.data]);
 
   async function useMyLocation() {
     setGeoStatus("loading");

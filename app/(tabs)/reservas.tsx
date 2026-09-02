@@ -3,6 +3,9 @@ import { Link } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiFetch } from "@/lib/api";
+import { getCached, setCached } from "@/lib/cache";
+
+const CACHE_KEY = "reservas";
 
 type Clase = { id: string; name: string; fecha: string | null; duracionMinutos: number };
 type Gym = { id: string; name: string };
@@ -117,7 +120,12 @@ function GuestPrompt() {
 
 function ReservationsList() {
   const { getToken } = useAuth();
-  const [state, setState] = useState<ScreenState>({ loading: true, error: null, reservations: [] });
+  const cached = getCached<ReservationEntry[]>(CACHE_KEY);
+  const [state, setState] = useState<ScreenState>({
+    loading: !cached,
+    error: null,
+    reservations: cached ?? [],
+  });
   const [cancelState, setCancelState] = useState<
     Record<string, { loading: boolean; error: string | null }>
   >({});
@@ -126,9 +134,14 @@ function ReservationsList() {
     try {
       const token = await getToken();
       const data = await apiFetch<{ reservations: ReservationEntry[] }>("/me/reservas", token);
+      setCached(CACHE_KEY, data.reservations);
       setState({ loading: false, error: null, reservations: data.reservations });
     } catch {
-      setState({ loading: false, error: "No pudimos cargar tus reservas.", reservations: [] });
+      setState((prev) =>
+        prev.reservations.length > 0
+          ? { ...prev, loading: false }
+          : { loading: false, error: "No pudimos cargar tus reservas.", reservations: [] }
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
