@@ -121,6 +121,65 @@ function precioEfectivo(clase: Clase): number {
     : clase.credits;
 }
 
+const DAY_KEY_FORMATTER = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" });
+const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("es-CO", {
+  timeZone: "America/Bogota",
+  weekday: "long",
+});
+const DATE_FORMATTER = new Intl.DateTimeFormat("es-CO", {
+  timeZone: "America/Bogota",
+  day: "numeric",
+  month: "long",
+});
+
+function formatHora(fecha: string): string {
+  return new Date(fecha).toLocaleString("es-CO", {
+    timeZone: "America/Bogota",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+type DiaGrupo = { key: string; titulo: string; fechaLabel: string | null; classes: Clase[] };
+
+/** Agrupa las clases por día calendario en Bogotá (Hoy, Mañana, luego el
+ * nombre del día) para que sea más fácil escoger entre toda la semana. Las
+ * clases ya llegan ordenadas cronológicamente desde el API. */
+function groupByDia(classes: Clase[]): DiaGrupo[] {
+  const hoyKey = DAY_KEY_FORMATTER.format(new Date());
+  const mananaKey = DAY_KEY_FORMATTER.format(new Date(Date.now() + 24 * 60 * 60 * 1000));
+
+  const grupos: DiaGrupo[] = [];
+  const sinFecha: Clase[] = [];
+
+  for (const clase of classes) {
+    if (!clase.fecha) {
+      sinFecha.push(clase);
+      continue;
+    }
+    const fecha = new Date(clase.fecha);
+    const key = DAY_KEY_FORMATTER.format(fecha);
+    let grupo = grupos.find((g) => g.key === key);
+    if (!grupo) {
+      const titulo =
+        key === hoyKey ? "Hoy" : key === mananaKey ? "Mañana" : capitalize(WEEKDAY_FORMATTER.format(fecha));
+      grupo = { key, titulo, fechaLabel: DATE_FORMATTER.format(fecha), classes: [] };
+      grupos.push(grupo);
+    }
+    grupo.classes.push(clase);
+  }
+
+  if (sinFecha.length > 0) {
+    grupos.push({ key: "sin-fecha", titulo: "Fecha por confirmar", fechaLabel: null, classes: sinFecha });
+  }
+
+  return grupos;
+}
+
 type GymDetailResponse = { gym: Gym; classes: Clase[] };
 
 type ScreenState = { loading: boolean; error: string | null; data: GymDetailResponse | null };
@@ -259,59 +318,68 @@ export default function GymDetailScreen() {
           <Text style={styles.subtitle}>Este gimnasio todavía no tiene clases programadas.</Text>
         )}
 
-        {classes.map((clase) => {
-          const book = bookState[clase.id];
-          const sinCupos = clase.cuposDisponibles <= 0;
-          return (
-            <View key={clase.id} style={styles.card}>
-              <Text style={styles.cardTitle}>{clase.name}</Text>
-              <Text style={styles.cardSubtitle}>
-                {clase.fecha ? new Date(clase.fecha).toLocaleString("es-CO") : "Sin fecha"}
-              </Text>
-              <Text style={styles.cardSubtitle}>
-                {precioEfectivo(clase) < clase.credits && (
-                  <Text style={styles.creditsStrikethrough}>{clase.credits} </Text>
-                )}
-                {precioEfectivo(clase)} créditos
-              </Text>
-              {clase.cuposDisponibles > 0 && clase.cuposDisponibles <= 2 && (
-                <Text style={styles.cuposAviso}>
-                  {clase.cuposDisponibles === 1
-                    ? "Último cupo disponible"
-                    : "Últimos 2 cupos disponibles"}
-                </Text>
-              )}
+        {groupByDia(classes).map((grupo) => (
+          <View key={grupo.key} style={styles.diaGrupo}>
+            <View style={styles.diaHeader}>
+              <Text style={styles.diaTitulo}>{grupo.titulo}</Text>
+              {grupo.fechaLabel && <Text style={styles.diaFecha}>{grupo.fechaLabel}</Text>}
+            </View>
 
-              {book?.error && <Text style={styles.errorText}>{book.error}</Text>}
-              {book?.ok && <Text style={styles.successText}>¡Reservado!</Text>}
-
-              {!isLoaded ? null : isSignedIn ? (
-                <Pressable
-                  disabled={sinCupos || book?.loading || book?.ok}
-                  onPress={() => reservar(clase.id)}
-                  style={[
-                    styles.button,
-                    (sinCupos || book?.ok) && styles.buttonDisabled,
-                  ]}
-                >
-                  {book?.loading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.buttonText}>
-                      {book?.ok ? "Reservado" : sinCupos ? "Sin cupos" : "Reservar"}
+            {grupo.classes.map((clase) => {
+              const book = bookState[clase.id];
+              const sinCupos = clase.cuposDisponibles <= 0;
+              return (
+                <View key={clase.id} style={styles.card}>
+                  <Text style={styles.cardTitle}>{clase.name}</Text>
+                  <Text style={styles.cardSubtitle}>
+                    {clase.fecha ? formatHora(clase.fecha) : "Hora por confirmar"}
+                  </Text>
+                  <Text style={styles.cardSubtitle}>
+                    {precioEfectivo(clase) < clase.credits && (
+                      <Text style={styles.creditsStrikethrough}>{clase.credits} </Text>
+                    )}
+                    {precioEfectivo(clase)} créditos
+                  </Text>
+                  {clase.cuposDisponibles > 0 && clase.cuposDisponibles <= 2 && (
+                    <Text style={styles.cuposAviso}>
+                      {clase.cuposDisponibles === 1
+                        ? "Último cupo disponible"
+                        : "Últimos 2 cupos disponibles"}
                     </Text>
                   )}
-                </Pressable>
-              ) : (
-                <Link href="/sign-in" asChild>
-                  <Pressable style={styles.button}>
-                    <Text style={styles.buttonText}>Inicia sesión para reservar</Text>
-                  </Pressable>
-                </Link>
-              )}
-            </View>
-          );
-        })}
+
+                  {book?.error && <Text style={styles.errorText}>{book.error}</Text>}
+                  {book?.ok && <Text style={styles.successText}>¡Reservado!</Text>}
+
+                  {!isLoaded ? null : isSignedIn ? (
+                    <Pressable
+                      disabled={sinCupos || book?.loading || book?.ok}
+                      onPress={() => reservar(clase.id)}
+                      style={[
+                        styles.button,
+                        (sinCupos || book?.ok) && styles.buttonDisabled,
+                      ]}
+                    >
+                      {book?.loading ? (
+                        <ActivityIndicator color="#fff" />
+                      ) : (
+                        <Text style={styles.buttonText}>
+                          {book?.ok ? "Reservado" : sinCupos ? "Sin cupos" : "Reservar"}
+                        </Text>
+                      )}
+                    </Pressable>
+                  ) : (
+                    <Link href="/sign-in" asChild>
+                      <Pressable style={styles.button}>
+                        <Text style={styles.buttonText}>Inicia sesión para reservar</Text>
+                      </Pressable>
+                    </Link>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        ))}
       </ScrollView>
 
       {viewerIndex !== null && (
@@ -359,6 +427,10 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: "800", color: "#063009" },
   subtitle: { fontSize: 14, color: "#06300999", marginTop: 4 },
   sectionTitle: { fontSize: 17, fontWeight: "700", color: "#063009", marginTop: 24, marginBottom: 12 },
+  diaGrupo: { marginBottom: 20 },
+  diaHeader: { flexDirection: "row", alignItems: "baseline", gap: 6, marginBottom: 10 },
+  diaTitulo: { fontSize: 16, fontWeight: "800", color: "#063009" },
+  diaFecha: { fontSize: 13, color: "#06300980" },
   accordionList: { marginTop: 16, gap: 8 },
   accordionItem: {
     borderWidth: 1,
