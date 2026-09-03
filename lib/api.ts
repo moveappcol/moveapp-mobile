@@ -1,5 +1,9 @@
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3000/api/mobile";
-const TIMEOUT_MS = 15_000;
+// Airtable reintenta sola cuando la limitan (5 peticiones/seg por base,
+// fijo en todos los planes), con espera progresiva — bajo mucha carga esa
+// espera puede acercarse a 15s, así que dejamos margen extra antes de
+// darnos por vencidos.
+const TIMEOUT_MS = 25_000;
 
 export async function apiFetch<T>(
   path: string,
