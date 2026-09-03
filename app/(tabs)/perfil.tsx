@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
+import { CREDIT_PLANS } from "@/lib/credits-pricing";
 
 const CACHE_KEY = "perfil";
 
@@ -62,6 +63,8 @@ function SignedInView() {
 
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [changingPlan, setChangingPlan] = useState(false);
+  const [changePlanError, setChangePlanError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -111,6 +114,35 @@ function SignedInView() {
     }
   }
 
+  function confirmChangePlan(currentPlanId: string | undefined) {
+    const opciones = CREDIT_PLANS.filter((p) => p.id !== currentPlanId);
+    Alert.alert(
+      "Cambiar de plan",
+      "El cambio aplica en tu próxima renovación, sin cobros adicionales ahora.",
+      [
+        ...opciones.map((p) => ({
+          text: `${p.name} — ${p.label}`,
+          onPress: () => changePlan(p.id),
+        })),
+        { text: "Cancelar", style: "cancel" as const },
+      ]
+    );
+  }
+
+  async function changePlan(planId: string) {
+    setChangingPlan(true);
+    setChangePlanError(null);
+    try {
+      const token = await getToken();
+      await apiFetch("/suscripcion/cambiar-plan", token, { method: "POST", body: { planId } });
+      await load();
+    } catch (err) {
+      setChangePlanError(err instanceof Error ? err.message : "No pudimos cambiar tu plan.");
+    } finally {
+      setChangingPlan(false);
+    }
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.email}>{user?.primaryEmailAddress?.emailAddress}</Text>
@@ -147,18 +179,32 @@ function SignedInView() {
                 </Text>
               )}
               {state.plan.estado === "Activa" && (
-                <Pressable
-                  style={styles.cancelPlanButton}
-                  onPress={confirmCancelPlan}
-                  disabled={cancelling}
-                >
-                  {cancelling ? (
-                    <ActivityIndicator color="#ff4f3f" size="small" />
-                  ) : (
-                    <Text style={styles.cancelPlanText}>Cancelar plan</Text>
-                  )}
-                </Pressable>
+                <View style={styles.planButtonsRow}>
+                  <Pressable
+                    style={styles.changePlanButton}
+                    onPress={() => confirmChangePlan(state.plan?.hasSubscription ? state.plan.plan?.id : undefined)}
+                    disabled={changingPlan}
+                  >
+                    {changingPlan ? (
+                      <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                      <Text style={styles.changePlanText}>Cambiar plan</Text>
+                    )}
+                  </Pressable>
+                  <Pressable
+                    style={styles.cancelPlanButton}
+                    onPress={confirmCancelPlan}
+                    disabled={cancelling}
+                  >
+                    {cancelling ? (
+                      <ActivityIndicator color="#ff4f3f" size="small" />
+                    ) : (
+                      <Text style={styles.cancelPlanText}>Cancelar plan</Text>
+                    )}
+                  </Pressable>
+                </View>
               )}
+              {changePlanError && <Text style={styles.cancelPlanError}>{changePlanError}</Text>}
               {cancelError && <Text style={styles.cancelPlanError}>{cancelError}</Text>}
             </>
           ) : (
@@ -232,9 +278,15 @@ const styles = StyleSheet.create({
   },
   planName: { fontSize: 17, fontWeight: "700", color: "#fff" },
   planMeta: { fontSize: 13, color: "#ffffffb3", marginTop: 4 },
+  planButtonsRow: { flexDirection: "row", gap: 10, marginTop: 16 },
+  changePlanButton: {
+    backgroundColor: "#ff4f3f",
+    borderRadius: 999,
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+  },
+  changePlanText: { color: "#fff", fontSize: 13, fontWeight: "700" },
   cancelPlanButton: {
-    marginTop: 16,
-    alignSelf: "flex-start",
     borderWidth: 1,
     borderColor: "#ff4f3f",
     borderRadius: 999,
