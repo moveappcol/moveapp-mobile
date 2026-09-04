@@ -14,6 +14,7 @@ import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
 import { distanceKm } from "@/lib/geo";
 import { Skeleton } from "@/components/Skeleton";
+import { useFavorites } from "@/lib/favorites";
 
 const CACHE_KEY = "gyms";
 
@@ -77,6 +78,8 @@ export default function GimnasiosScreen() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [geoStatus, setGeoStatus] = useState<GeoStatus>("idle");
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   useEffect(() => {
     apiFetch<GymsResponse>("/gyms")
@@ -141,6 +144,7 @@ export default function GimnasiosScreen() {
           ? true
           : [gym.name, gym.city, gym.address].some((f) => f.toLowerCase().includes(q))
       )
+      .filter((gym) => (onlyFavorites ? isFavorite(gym.id) : true))
       .map((gym) => ({
         ...gym,
         distance:
@@ -154,7 +158,7 @@ export default function GimnasiosScreen() {
     }
 
     return list;
-  }, [gyms, query, selectedActivities, userLocation]);
+  }, [gyms, query, selectedActivities, userLocation, onlyFavorites, isFavorite]);
 
   if (state.loading) {
     return (
@@ -224,6 +228,14 @@ export default function GimnasiosScreen() {
 
       {activityOptions.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
+          <Pressable
+            onPress={() => setOnlyFavorites((v) => !v)}
+            style={[styles.chip, onlyFavorites && styles.chipActive]}
+          >
+            <Text style={[styles.chipText, onlyFavorites && styles.chipTextActive]}>
+              ♥ Favoritos
+            </Text>
+          </Pressable>
           {activityOptions.map((activity) => {
             const active = selectedActivities.includes(activity);
             return (
@@ -278,6 +290,13 @@ export default function GimnasiosScreen() {
                   ) : (
                     <Text style={styles.photoPlaceholder}>Foto próximamente</Text>
                   )}
+                  <Pressable
+                    style={styles.favoriteButton}
+                    hitSlop={10}
+                    onPress={() => toggleFavorite(gym.id)}
+                  >
+                    <Text style={styles.favoriteIcon}>{isFavorite(gym.id) ? "♥" : "♡"}</Text>
+                  </Pressable>
                 </View>
                 <View style={styles.cardBody}>
                   <View style={styles.cardHeaderRow}>
@@ -411,8 +430,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#0630090d",
     alignItems: "center",
     justifyContent: "center",
+    position: "relative",
   },
   photo: { width: "100%", height: "100%" },
+  favoriteButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#00000055",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  favoriteIcon: { color: "#fff", fontSize: 17, lineHeight: 19 },
   photoPlaceholder: {
     fontSize: 11,
     fontWeight: "700",

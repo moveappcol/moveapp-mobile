@@ -16,6 +16,7 @@ import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
 import { BackButton } from "@/components/BackButton";
 import { Skeleton } from "@/components/Skeleton";
+import { useFavorites } from "@/lib/favorites";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
@@ -192,6 +193,7 @@ type BookState = Record<string, { loading: boolean; error: string | null; ok: bo
 export default function GymDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const cacheKey = `gimnasio:${id}`;
   const cached = getCached<GymDetailResponse>(cacheKey);
   const [state, setState] = useState<ScreenState>({
@@ -310,7 +312,12 @@ export default function GymDetailScreen() {
           </View>
         )}
 
-        <Text style={styles.title}>{gym.name.trim()}</Text>
+        <View style={styles.titleRow}>
+          <Text style={[styles.title, { flex: 1 }]}>{gym.name.trim()}</Text>
+          <Pressable hitSlop={10} onPress={() => toggleFavorite(gym.id)}>
+            <Text style={styles.titleFavoriteIcon}>{isFavorite(gym.id) ? "♥" : "♡"}</Text>
+          </Pressable>
+        </View>
         <Text style={styles.subtitle}>{gym.activities.join(", ")}</Text>
         <Text style={styles.subtitle}>{gym.address}</Text>
 
@@ -439,6 +446,8 @@ const styles = StyleSheet.create({
   },
   badgeText: { color: "#ff4f3f", fontSize: 11, fontWeight: "700", textTransform: "uppercase" },
   title: { fontSize: 22, fontWeight: "800", color: "#063009" },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  titleFavoriteIcon: { fontSize: 24, color: "#ff4f3f" },
   subtitle: { fontSize: 14, color: "#06300999", marginTop: 4 },
   sectionTitle: { fontSize: 17, fontWeight: "700", color: "#063009", marginTop: 24, marginBottom: 12 },
   diaGrupo: { marginBottom: 20 },
