@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { TabIcon } from "@/components/TabIcon";
 import { apiFetch } from "@/lib/api";
 import { setCached } from "@/lib/cache";
+import { registerForPushNotificationsAsync } from "@/lib/push-notifications";
 
 type CreditsResponse = { credits: number; vencimiento: string | null; perfilCompleto: boolean };
 
@@ -45,6 +46,13 @@ export default function TabsLayout() {
         if (!credits.perfilCompleto) {
           router.replace("/completar-perfil");
         }
+        registerForPushNotificationsAsync().then((pushToken) => {
+          if (pushToken) {
+            apiFetch("/push-token", token, { method: "POST", body: { token: pushToken } }).catch(
+              () => {}
+            );
+          }
+        });
       } catch {
         // si falla la verificación, dejamos seguir — no bloqueamos por un error de red
       }

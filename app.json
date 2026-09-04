@@ -49,6 +49,12 @@
           "resizeMode": "contain",
           "backgroundColor": "#FF4F3F"
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#ff4f3f"
+        }
       ]
     ],
     "experiments": {
