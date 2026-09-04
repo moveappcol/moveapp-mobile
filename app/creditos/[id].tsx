@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { apiFetch } from "@/lib/api";
+import { BackButton } from "@/components/BackButton";
 import { CREDIT_TOPUPS, formatCOP } from "@/lib/credits-pricing";
 import { tokenizeCard } from "@/lib/wompi";
 
@@ -106,7 +107,7 @@ export default function TopupCheckoutScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: true, title: topup.label, headerBackTitle: "Atrás" }} />
+      <Stack.Screen options={{ headerShown: true, title: topup.label, headerLeft: () => <BackButton /> }} />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>{topup.label} adicionales</Text>
         <Text style={styles.price}>{formatCOP(topup.price)}</Text>

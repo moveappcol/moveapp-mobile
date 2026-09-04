@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
+import { BackButton } from "@/components/BackButton";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
@@ -278,7 +279,9 @@ export default function GymDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: true, title: gym.name.trim(), headerBackTitle: "Atrás" }} />
+      <Stack.Screen
+        options={{ headerShown: true, title: gym.name.trim(), headerLeft: () => <BackButton /> }}
+      />
       <ScrollView contentContainerStyle={styles.container}>
         {gym.photoDetailUrls.length > 0 && (
           <View style={styles.photoRow}>

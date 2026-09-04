@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { apiFetch } from "@/lib/api";
+import { BackButton } from "@/components/BackButton";
 import { CREDIT_PLANS, formatCOP } from "@/lib/credits-pricing";
 import { tokenizeCard } from "@/lib/wompi";
 
@@ -106,7 +107,7 @@ export default function PlanCheckoutScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: true, title: plan.name, headerBackTitle: "Atrás" }} />
+      <Stack.Screen options={{ headerShown: true, title: plan.name, headerLeft: () => <BackButton /> }} />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>{plan.name}</Text>
         <Text style={styles.subtitle}>{plan.label}</Text>
