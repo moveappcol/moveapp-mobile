@@ -125,6 +125,26 @@ function precioEfectivo(clase: Clase): number {
     : clase.credits;
 }
 
+type Franja = "manana" | "tarde" | "noche";
+const FRANJAS: { key: Franja; label: string }[] = [
+  { key: "manana", label: "Mañana" },
+  { key: "tarde", label: "Tarde" },
+  { key: "noche", label: "Noche" },
+];
+
+const HOUR_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/Bogota",
+  hour: "numeric",
+  hourCycle: "h23",
+});
+
+function franjaDeFecha(fecha: string): Franja {
+  const hora = parseInt(HOUR_FORMATTER.format(new Date(fecha)), 10);
+  if (hora < 12) return "manana";
+  if (hora < 18) return "tarde";
+  return "noche";
+}
+
 const DAY_KEY_FORMATTER = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" });
 const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("es-CO", {
   timeZone: "America/Bogota",
@@ -194,6 +214,7 @@ export default function GymDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const [franja, setFranja] = useState<Franja | null>(null);
   const cacheKey = `gimnasio:${id}`;
   const cached = getCached<GymDetailResponse>(cacheKey);
   const [state, setState] = useState<ScreenState>({
@@ -283,6 +304,10 @@ export default function GymDetailScreen() {
   }
 
   const { gym, classes } = state.data;
+  const classesFiltradas = franja
+    ? classes.filter((c) => !c.fecha || franjaDeFecha(c.fecha) === franja)
+    : classes;
+  const gruposFiltrados = groupByDia(classesFiltradas);
   const generoLabel =
     gym.genero === "solo_mujeres"
       ? "Gimnasio exclusivo para mujeres"
@@ -339,7 +364,37 @@ export default function GymDetailScreen() {
           <Text style={styles.subtitle}>Este gimnasio todavía no tiene clases programadas.</Text>
         )}
 
-        {groupByDia(classes).map((grupo) => (
+        {classes.length > 0 && (
+          <View style={styles.franjaRow}>
+            <Pressable
+              style={[styles.franjaChip, franja === null && styles.franjaChipActive]}
+              onPress={() => setFranja(null)}
+            >
+              <Text style={[styles.franjaChipText, franja === null && styles.franjaChipTextActive]}>
+                Todo el día
+              </Text>
+            </Pressable>
+            {FRANJAS.map((f) => (
+              <Pressable
+                key={f.key}
+                style={[styles.franjaChip, franja === f.key && styles.franjaChipActive]}
+                onPress={() => setFranja((prev) => (prev === f.key ? null : f.key))}
+              >
+                <Text
+                  style={[styles.franjaChipText, franja === f.key && styles.franjaChipTextActive]}
+                >
+                  {f.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+
+        {classes.length > 0 && gruposFiltrados.length === 0 && (
+          <Text style={styles.subtitle}>No hay clases en esa franja horaria.</Text>
+        )}
+
+        {gruposFiltrados.map((grupo) => (
           <View key={grupo.key} style={styles.diaGrupo}>
             <View style={styles.diaHeader}>
               <Text style={styles.diaTitulo}>{grupo.titulo}</Text>
@@ -450,6 +505,16 @@ const styles = StyleSheet.create({
   titleFavoriteIcon: { fontSize: 24, color: "#ff4f3f" },
   subtitle: { fontSize: 14, color: "#06300999", marginTop: 4 },
   sectionTitle: { fontSize: 17, fontWeight: "700", color: "#063009", marginTop: 24, marginBottom: 12 },
+  franjaRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
+  franjaChip: {
+    borderRadius: 999,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    backgroundColor: "#06300908",
+  },
+  franjaChipActive: { backgroundColor: "#063009" },
+  franjaChipText: { fontSize: 12, fontWeight: "700", color: "#06300999" },
+  franjaChipTextActive: { color: "#fff" },
   diaGrupo: { marginBottom: 20 },
   diaHeader: { flexDirection: "row", alignItems: "baseline", gap: 6, marginBottom: 10 },
   diaTitulo: { fontSize: 16, fontWeight: "800", color: "#063009" },
