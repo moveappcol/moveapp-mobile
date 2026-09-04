@@ -3,6 +3,33 @@ import { Tabs, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { TabIcon } from "@/components/TabIcon";
 import { apiFetch } from "@/lib/api";
+import { setCached } from "@/lib/cache";
+
+type CreditsResponse = { credits: number; vencimiento: string | null; perfilCompleto: boolean };
+
+/** Apenas se sabe que hay sesión iniciada, pedimos de una vez los datos que
+ * usan las otras pestañas (Perfil, Planes, Mis Reservas) y los dejamos en
+ * caché — así cuando el usuario las abre, casi siempre ya tienen datos
+ * listos en vez de arrancar en blanco. Cada pestaña igual vuelve a pedir
+ * su propia data al montarse (esto solo adelanta el primer viaje). */
+function warmOtherTabsCache(token: string | null, credits: CreditsResponse) {
+  apiFetch<unknown>("/me/plan", token)
+    .then((plan) => {
+      setCached("perfil", { credits, plan });
+      const active =
+        typeof plan === "object" &&
+        plan !== null &&
+        "hasSubscription" in plan &&
+        (plan as { hasSubscription: boolean }).hasSubscription &&
+        (plan as { estado?: string }).estado === "Activa";
+      setCached("hasActivePlan", Boolean(active));
+    })
+    .catch(() => {});
+
+  apiFetch<{ reservations: unknown[] }>("/me/reservas", token)
+    .then((data) => setCached("reservas", data.reservations))
+    .catch(() => {});
+}
 
 export default function TabsLayout() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
@@ -13,7 +40,8 @@ export default function TabsLayout() {
     (async () => {
       try {
         const token = await getToken();
-        const credits = await apiFetch<{ perfilCompleto: boolean }>("/me/credits", token);
+        const credits = await apiFetch<CreditsResponse>("/me/credits", token);
+        warmOtherTabsCache(token, credits);
         if (!credits.perfilCompleto) {
           router.replace("/completar-perfil");
         }
