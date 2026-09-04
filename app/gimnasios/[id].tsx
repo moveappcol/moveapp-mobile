@@ -15,6 +15,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
 import { BackButton } from "@/components/BackButton";
+import { Skeleton } from "@/components/Skeleton";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
@@ -57,6 +58,7 @@ type Gym = {
   city: string;
   address: string;
   photoDetailUrls: string[];
+  photoDetailFullUrls: string[];
   genero: "todos" | "solo_mujeres" | "solo_hombres";
   description: string | null;
   puntualidad: string | null;
@@ -255,9 +257,18 @@ export default function GymDetailScreen() {
 
   if (state.loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator />
-      </View>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.photoRow}>
+          <Skeleton style={[styles.photoPressable, { aspectRatio: 1, borderRadius: 16 }]} />
+          <Skeleton style={[styles.photoPressable, { aspectRatio: 1, borderRadius: 16 }]} />
+          <Skeleton style={[styles.photoPressable, { aspectRatio: 1, borderRadius: 16 }]} />
+        </View>
+        <Skeleton style={{ height: 22, width: "60%", borderRadius: 6, marginTop: 12 }} />
+        <Skeleton style={{ height: 14, width: "40%", borderRadius: 4, marginTop: 10 }} />
+        <Skeleton style={{ height: 14, width: "55%", borderRadius: 4, marginTop: 6 }} />
+        <Skeleton style={{ height: 100, width: "100%", borderRadius: 16, marginTop: 24 }} />
+        <Skeleton style={{ height: 100, width: "100%", borderRadius: 16, marginTop: 12 }} />
+      </ScrollView>
     );
   }
 
@@ -387,7 +398,7 @@ export default function GymDetailScreen() {
 
       {viewerIndex !== null && (
         <PhotoViewer
-          photos={gym.photoDetailUrls}
+          photos={gym.photoDetailFullUrls}
           initialIndex={viewerIndex}
           onClose={() => setViewerIndex(null)}
         />

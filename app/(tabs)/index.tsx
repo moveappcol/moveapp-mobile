@@ -2,7 +2,6 @@ import * as Location from "expo-location";
 import { Link } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -14,6 +13,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
 import { distanceKm } from "@/lib/geo";
+import { Skeleton } from "@/components/Skeleton";
 
 const CACHE_KEY = "gyms";
 
@@ -41,6 +41,28 @@ function SearchIcon() {
       <Text style={{ fontSize: 14 }}>🔍</Text>
     </View>
   );
+}
+
+function GymCardSkeleton() {
+  return (
+    <View style={styles.card}>
+      <Skeleton style={styles.photoWrap as object} />
+      <View style={styles.cardBody}>
+        <Skeleton style={{ height: 15, width: "70%", borderRadius: 4 }} />
+        <Skeleton style={{ height: 12, width: "50%", borderRadius: 4, marginTop: 8 }} />
+        <Skeleton style={{ height: 12, width: "85%", borderRadius: 4, marginTop: 6 }} />
+      </View>
+    </View>
+  );
+}
+
+/** Empieza a pedir el detalle del gimnasio apenas el dedo toca la tarjeta
+ * (antes de que se complete el tap/la navegación) y lo deja en caché, para
+ * que cuando la pantalla de detalle monte ya tenga los datos listos. */
+function prefetchGym(id: string) {
+  apiFetch<unknown>(`/gimnasios/${id}`)
+    .then((data) => setCached(`gimnasio:${id}`, data))
+    .catch(() => {});
 }
 
 export default function GimnasiosScreen() {
@@ -136,9 +158,15 @@ export default function GimnasiosScreen() {
 
   if (state.loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator />
-      </View>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.wordmark}>UNIQUE</Text>
+        <Text style={styles.title}>Gimnasios afiliados</Text>
+        <View style={styles.list}>
+          <GymCardSkeleton />
+          <GymCardSkeleton />
+          <GymCardSkeleton />
+        </View>
+      </ScrollView>
     );
   }
 
@@ -243,7 +271,7 @@ export default function GimnasiosScreen() {
                 : null;
           return (
             <Link key={gym.id} href={`/gimnasios/${gym.id}`} asChild>
-              <Pressable style={styles.card}>
+              <Pressable style={styles.card} onPressIn={() => prefetchGym(gym.id)}>
                 <View style={styles.photoWrap}>
                   {gym.photoUrl ? (
                     <Image source={{ uri: gym.photoUrl }} style={styles.photo} />
