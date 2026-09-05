@@ -55,7 +55,8 @@
         {
           "color": "#ff4f3f"
         }
-      ]
+      ],
+      "react-native-maps"
     ],
     "experiments": {
       "typedRoutes": true
