@@ -210,6 +210,11 @@ type ScreenState = { loading: boolean; error: string | null; data: GymDetailResp
 
 type BookState = Record<string, { loading: boolean; error: string | null; ok: boolean }>;
 
+type WaitlistState = Record<
+  string,
+  { loading: boolean; enEspera: boolean; posicion: number | null; error: string | null }
+>;
+
 export default function GymDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isLoaded, isSignedIn, getToken } = useAuth();
@@ -223,6 +228,7 @@ export default function GymDetailScreen() {
     data: cached ?? null,
   });
   const [bookState, setBookState] = useState<BookState>({});
+  const [waitlistState, setWaitlistState] = useState<WaitlistState>({});
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const load = useCallback(() => {
@@ -247,6 +253,76 @@ export default function GymDetailScreen() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    if (!isSignedIn || !state.data) return;
+    const llenas = state.data.classes.filter((c) => c.cuposDisponibles <= 0);
+    for (const clase of llenas) {
+      if (waitlistState[clase.id]) continue;
+      (async () => {
+        try {
+          const token = await getToken();
+          const status = await apiFetch<{ enEspera: boolean; posicion: number | null }>(
+            `/gimnasios/${id}/lista-espera?claseId=${clase.id}`,
+            token
+          );
+          setWaitlistState((prev) => ({
+            ...prev,
+            [clase.id]: { loading: false, error: null, ...status },
+          }));
+        } catch {
+          // si falla la consulta simplemente no mostramos el estado — el
+          // botón de "Unirme" sigue disponible igual
+        }
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn, state.data]);
+
+  async function unirseListaEspera(claseId: string) {
+    setWaitlistState((prev) => ({
+      ...prev,
+      [claseId]: { loading: true, error: null, enEspera: false, posicion: null },
+    }));
+    try {
+      const token = await getToken();
+      const result = await apiFetch<{ ok: boolean; posicion: number; error?: string }>(
+        `/gimnasios/${id}/lista-espera`,
+        token,
+        { method: "POST", body: { claseId } }
+      );
+      setWaitlistState((prev) => ({
+        ...prev,
+        [claseId]: { loading: false, error: null, enEspera: true, posicion: result.posicion },
+      }));
+    } catch (err) {
+      setWaitlistState((prev) => ({
+        ...prev,
+        [claseId]: {
+          loading: false,
+          enEspera: false,
+          posicion: null,
+          error: err instanceof Error ? err.message : "No pudimos unirte a la lista de espera.",
+        },
+      }));
+    }
+  }
+
+  async function salirListaEspera(claseId: string) {
+    setWaitlistState((prev) => ({ ...prev, [claseId]: { ...prev[claseId], loading: true } }));
+    try {
+      const token = await getToken();
+      await apiFetch(`/gimnasios/${id}/lista-espera?claseId=${claseId}`, token, {
+        method: "DELETE",
+      });
+      setWaitlistState((prev) => ({
+        ...prev,
+        [claseId]: { loading: false, error: null, enEspera: false, posicion: null },
+      }));
+    } catch {
+      setWaitlistState((prev) => ({ ...prev, [claseId]: { ...prev[claseId], loading: false } }));
+    }
+  }
 
   async function reservar(claseId: string) {
     setBookState((prev) => ({ ...prev, [claseId]: { loading: true, error: null, ok: false } }));
@@ -427,29 +503,66 @@ export default function GymDetailScreen() {
                   {book?.error && <Text style={styles.errorText}>{book.error}</Text>}
                   {book?.ok && <Text style={styles.successText}>¡Reservado!</Text>}
 
-                  {!isLoaded ? null : isSignedIn ? (
-                    <Pressable
-                      disabled={sinCupos || book?.loading || book?.ok}
-                      onPress={() => reservar(clase.id)}
-                      style={[
-                        styles.button,
-                        (sinCupos || book?.ok) && styles.buttonDisabled,
-                      ]}
-                    >
-                      {book?.loading ? (
-                        <ActivityIndicator color="#fff" />
-                      ) : (
-                        <Text style={styles.buttonText}>
-                          {book?.ok ? "Reservado" : sinCupos ? "Sin cupos" : "Reservar"}
-                        </Text>
-                      )}
-                    </Pressable>
-                  ) : (
+                  {!isLoaded ? null : !isSignedIn ? (
                     <Link href="/sign-in" asChild>
                       <Pressable style={styles.button}>
                         <Text style={styles.buttonText}>Inicia sesión para reservar</Text>
                       </Pressable>
                     </Link>
+                  ) : sinCupos ? (
+                    (() => {
+                      const waitlist = waitlistState[clase.id];
+                      if (waitlist?.error) {
+                        return <Text style={styles.errorText}>{waitlist.error}</Text>;
+                      }
+                      if (waitlist?.enEspera) {
+                        return (
+                          <View>
+                            <Text style={styles.waitlistText}>
+                              Estás en la lista de espera
+                              {waitlist.posicion ? ` (posición ${waitlist.posicion})` : ""} — te
+                              avisamos si se libera un cupo.
+                            </Text>
+                            <Pressable
+                              style={[styles.button, styles.buttonOutline]}
+                              disabled={waitlist.loading}
+                              onPress={() => salirListaEspera(clase.id)}
+                            >
+                              {waitlist.loading ? (
+                                <ActivityIndicator color="#ff4f3f" />
+                              ) : (
+                                <Text style={styles.buttonOutlineText}>Salir de la lista</Text>
+                              )}
+                            </Pressable>
+                          </View>
+                        );
+                      }
+                      return (
+                        <Pressable
+                          style={styles.button}
+                          disabled={waitlist?.loading}
+                          onPress={() => unirseListaEspera(clase.id)}
+                        >
+                          {waitlist?.loading ? (
+                            <ActivityIndicator color="#fff" />
+                          ) : (
+                            <Text style={styles.buttonText}>Unirme a la lista de espera</Text>
+                          )}
+                        </Pressable>
+                      );
+                    })()
+                  ) : (
+                    <Pressable
+                      disabled={book?.loading || book?.ok}
+                      onPress={() => reservar(clase.id)}
+                      style={[styles.button, book?.ok && styles.buttonDisabled]}
+                    >
+                      {book?.loading ? (
+                        <ActivityIndicator color="#fff" />
+                      ) : (
+                        <Text style={styles.buttonText}>{book?.ok ? "Reservado" : "Reservar"}</Text>
+                      )}
+                    </Pressable>
                   )}
                 </View>
               );
@@ -569,4 +682,7 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.5 },
   buttonText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  buttonOutline: { backgroundColor: "transparent", borderWidth: 1, borderColor: "#ff4f3f" },
+  buttonOutlineText: { color: "#ff4f3f", fontSize: 14, fontWeight: "700" },
+  waitlistText: { fontSize: 12, color: "#06300999", marginBottom: 8, lineHeight: 17 },
 });

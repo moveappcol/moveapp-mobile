@@ -8,7 +8,7 @@ const TIMEOUT_MS = 25_000;
 export async function apiFetch<T>(
   path: string,
   token?: string | null,
-  options?: { method?: "GET" | "POST"; body?: unknown }
+  options?: { method?: "GET" | "POST" | "DELETE"; body?: unknown }
 ): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
