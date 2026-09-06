@@ -133,18 +133,20 @@ const NOMBRES_MES = [
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ];
 
-type DiaSemana = { key: string; esHoy: boolean; nombre: string; fechaLabel: string };
+type DiaTab = { id: string; dateKey: string; label: string; fechaLabel: string };
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-/** Los 7 días de la semana calendario actual (lunes a domingo) en Bogotá,
- * con la fecha de cada uno — se recalcula solo con la fecha de hoy, así que
- * "rueda" a la semana siguiente sin ningún cambio de código. Se hace toda
- * la aritmética en UTC "de calendario" (sin horas) para no depender de la
- * zona horaria del teléfono. */
-function semanaActual(): DiaSemana[] {
+/** "Hoy" fijo de primero, seguido de los 7 días de la semana calendario
+ * actual (lunes a domingo) en Bogotá, cada uno con su fecha — incluso el
+ * que coincide con hoy se muestra con su nombre real, no se fusiona con la
+ * pestaña "Hoy". Se recalcula solo con la fecha de hoy, así que "rueda" a
+ * la semana siguiente sin ningún cambio de código. Toda la aritmética es
+ * en UTC "de calendario" (sin horas) para no depender de la zona horaria
+ * del teléfono. */
+function semanaActual(): DiaTab[] {
   const [yStr, mStr, dStr] = DAY_KEY_FORMATTER.format(new Date()).split("-");
   const hoy = { y: Number(yStr), m: Number(mStr), d: Number(dStr) };
   const hoyKey = `${yStr}-${mStr}-${dStr}`;
@@ -153,19 +155,20 @@ function semanaActual(): DiaSemana[] {
   const diaSemanaISO = (new Date(hoyUTC).getUTCDay() + 6) % 7; // lunes=0 ... domingo=6
   const lunesUTC = hoyUTC - diaSemanaISO * 86_400_000;
 
-  return Array.from({ length: 7 }, (_, i) => {
+  const dias: DiaTab[] = [
+    { id: "hoy", dateKey: hoyKey, label: "Hoy", fechaLabel: `${hoy.d} de ${NOMBRES_MES[hoy.m - 1]}` },
+  ];
+
+  for (let i = 0; i < 7; i++) {
     const fecha = new Date(lunesUTC + i * 86_400_000);
     const y = fecha.getUTCFullYear();
     const m = fecha.getUTCMonth() + 1;
     const d = fecha.getUTCDate();
-    const key = `${y}-${pad(m)}-${pad(d)}`;
-    return {
-      key,
-      esHoy: key === hoyKey,
-      nombre: NOMBRES_DIA[i],
-      fechaLabel: `${d} de ${NOMBRES_MES[m - 1]}`,
-    };
-  });
+    const dateKey = `${y}-${pad(m)}-${pad(d)}`;
+    dias.push({ id: dateKey, dateKey, label: NOMBRES_DIA[i], fechaLabel: `${d} de ${NOMBRES_MES[m - 1]}` });
+  }
+
+  return dias;
 }
 
 function formatHora(fecha: string): string {
@@ -192,9 +195,7 @@ export default function GymDetailScreen() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const semana = useMemo(() => semanaActual(), []);
-  const [diaSeleccionado, setDiaSeleccionado] = useState(
-    () => semana.find((d) => d.esHoy)?.key ?? semana[0].key
-  );
+  const [diaSeleccionadoId, setDiaSeleccionadoId] = useState("hoy");
   const cacheKey = `gimnasio:${id}`;
   const cached = getCached<GymDetailResponse>(cacheKey);
   const [state, setState] = useState<ScreenState>({
@@ -355,11 +356,11 @@ export default function GymDetailScreen() {
   }
 
   const { gym, classes } = state.data;
+  const diaActivo = semana.find((d) => d.id === diaSeleccionadoId) ?? semana[0];
   const clasesDelDia = classes.filter(
-    (c) => c.fecha && DAY_KEY_FORMATTER.format(new Date(c.fecha)) === diaSeleccionado
+    (c) => c.fecha && DAY_KEY_FORMATTER.format(new Date(c.fecha)) === diaActivo.dateKey
   );
   const sinFecha = classes.filter((c) => !c.fecha);
-  const diaActivo = semana.find((d) => d.key === diaSeleccionado);
   const generoLabel =
     gym.genero === "solo_mujeres"
       ? "Gimnasio exclusivo para mujeres"
@@ -425,17 +426,23 @@ export default function GymDetailScreen() {
           >
             {semana.map((dia) => (
               <Pressable
-                key={dia.key}
-                style={[styles.diaChip, diaSeleccionado === dia.key && styles.diaChipActive]}
-                onPress={() => setDiaSeleccionado(dia.key)}
+                key={dia.id}
+                style={[styles.diaChip, diaSeleccionadoId === dia.id && styles.diaChipActive]}
+                onPress={() => setDiaSeleccionadoId(dia.id)}
               >
                 <Text
-                  style={[styles.diaChipLabel, diaSeleccionado === dia.key && styles.diaChipLabelActive]}
+                  style={[
+                    styles.diaChipLabel,
+                    diaSeleccionadoId === dia.id && styles.diaChipLabelActive,
+                  ]}
                 >
-                  {dia.esHoy ? "Hoy" : dia.nombre.slice(0, 3)}
+                  {dia.id === "hoy" ? "Hoy" : dia.label.slice(0, 3)}
                 </Text>
                 <Text
-                  style={[styles.diaChipFecha, diaSeleccionado === dia.key && styles.diaChipFechaActive]}
+                  style={[
+                    styles.diaChipFecha,
+                    diaSeleccionadoId === dia.id && styles.diaChipFechaActive,
+                  ]}
                 >
                   {dia.fechaLabel}
                 </Text>
@@ -444,9 +451,9 @@ export default function GymDetailScreen() {
           </ScrollView>
         )}
 
-        {diaActivo && classes.length > 0 && (
+        {classes.length > 0 && (
           <View style={styles.diaHeader}>
-            <Text style={styles.diaTitulo}>{diaActivo.esHoy ? "Hoy" : diaActivo.nombre}</Text>
+            <Text style={styles.diaTitulo}>{diaActivo.label}</Text>
             <Text style={styles.diaFecha}>{diaActivo.fechaLabel}</Text>
           </View>
         )}
