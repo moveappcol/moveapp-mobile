@@ -1,6 +1,6 @@
 import { useAuth } from "@clerk/expo";
 import { Link, Stack, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -125,36 +125,48 @@ function precioEfectivo(clase: Clase): number {
     : clase.credits;
 }
 
-type Franja = "manana" | "tarde" | "noche";
-const FRANJAS: { key: Franja; label: string }[] = [
-  { key: "manana", label: "Mañana" },
-  { key: "tarde", label: "Tarde" },
-  { key: "noche", label: "Noche" },
+const DAY_KEY_FORMATTER = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" });
+
+const NOMBRES_DIA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+const NOMBRES_MES = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ];
 
-const HOUR_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  timeZone: "America/Bogota",
-  hour: "numeric",
-  hourCycle: "h23",
-});
+type DiaSemana = { key: string; esHoy: boolean; nombre: string; fechaLabel: string };
 
-function franjaDeFecha(fecha: string): Franja {
-  const hora = parseInt(HOUR_FORMATTER.format(new Date(fecha)), 10);
-  if (hora < 12) return "manana";
-  if (hora < 18) return "tarde";
-  return "noche";
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
 }
 
-const DAY_KEY_FORMATTER = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" });
-const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("es-CO", {
-  timeZone: "America/Bogota",
-  weekday: "long",
-});
-const DATE_FORMATTER = new Intl.DateTimeFormat("es-CO", {
-  timeZone: "America/Bogota",
-  day: "numeric",
-  month: "long",
-});
+/** Los 7 días de la semana calendario actual (lunes a domingo) en Bogotá,
+ * con la fecha de cada uno — se recalcula solo con la fecha de hoy, así que
+ * "rueda" a la semana siguiente sin ningún cambio de código. Se hace toda
+ * la aritmética en UTC "de calendario" (sin horas) para no depender de la
+ * zona horaria del teléfono. */
+function semanaActual(): DiaSemana[] {
+  const [yStr, mStr, dStr] = DAY_KEY_FORMATTER.format(new Date()).split("-");
+  const hoy = { y: Number(yStr), m: Number(mStr), d: Number(dStr) };
+  const hoyKey = `${yStr}-${mStr}-${dStr}`;
+
+  const hoyUTC = Date.UTC(hoy.y, hoy.m - 1, hoy.d);
+  const diaSemanaISO = (new Date(hoyUTC).getUTCDay() + 6) % 7; // lunes=0 ... domingo=6
+  const lunesUTC = hoyUTC - diaSemanaISO * 86_400_000;
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const fecha = new Date(lunesUTC + i * 86_400_000);
+    const y = fecha.getUTCFullYear();
+    const m = fecha.getUTCMonth() + 1;
+    const d = fecha.getUTCDate();
+    const key = `${y}-${pad(m)}-${pad(d)}`;
+    return {
+      key,
+      esHoy: key === hoyKey,
+      nombre: NOMBRES_DIA[i],
+      fechaLabel: `${d} de ${NOMBRES_MES[m - 1]}`,
+    };
+  });
+}
 
 function formatHora(fecha: string): string {
   return new Date(fecha).toLocaleString("es-CO", {
@@ -162,46 +174,6 @@ function formatHora(fecha: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
-}
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-type DiaGrupo = { key: string; titulo: string; fechaLabel: string | null; classes: Clase[] };
-
-/** Agrupa las clases por día calendario en Bogotá (Hoy, Mañana, luego el
- * nombre del día) para que sea más fácil escoger entre toda la semana. Las
- * clases ya llegan ordenadas cronológicamente desde el API. */
-function groupByDia(classes: Clase[]): DiaGrupo[] {
-  const hoyKey = DAY_KEY_FORMATTER.format(new Date());
-  const mananaKey = DAY_KEY_FORMATTER.format(new Date(Date.now() + 24 * 60 * 60 * 1000));
-
-  const grupos: DiaGrupo[] = [];
-  const sinFecha: Clase[] = [];
-
-  for (const clase of classes) {
-    if (!clase.fecha) {
-      sinFecha.push(clase);
-      continue;
-    }
-    const fecha = new Date(clase.fecha);
-    const key = DAY_KEY_FORMATTER.format(fecha);
-    let grupo = grupos.find((g) => g.key === key);
-    if (!grupo) {
-      const titulo =
-        key === hoyKey ? "Hoy" : key === mananaKey ? "Mañana" : capitalize(WEEKDAY_FORMATTER.format(fecha));
-      grupo = { key, titulo, fechaLabel: DATE_FORMATTER.format(fecha), classes: [] };
-      grupos.push(grupo);
-    }
-    grupo.classes.push(clase);
-  }
-
-  if (sinFecha.length > 0) {
-    grupos.push({ key: "sin-fecha", titulo: "Fecha por confirmar", fechaLabel: null, classes: sinFecha });
-  }
-
-  return grupos;
 }
 
 type GymDetailResponse = { gym: Gym; classes: Clase[] };
@@ -219,7 +191,10 @@ export default function GymDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const [franja, setFranja] = useState<Franja | null>(null);
+  const semana = useMemo(() => semanaActual(), []);
+  const [diaSeleccionado, setDiaSeleccionado] = useState(
+    () => semana.find((d) => d.esHoy)?.key ?? semana[0].key
+  );
   const cacheKey = `gimnasio:${id}`;
   const cached = getCached<GymDetailResponse>(cacheKey);
   const [state, setState] = useState<ScreenState>({
@@ -380,10 +355,11 @@ export default function GymDetailScreen() {
   }
 
   const { gym, classes } = state.data;
-  const classesFiltradas = franja
-    ? classes.filter((c) => !c.fecha || franjaDeFecha(c.fecha) === franja)
-    : classes;
-  const gruposFiltrados = groupByDia(classesFiltradas);
+  const clasesDelDia = classes.filter(
+    (c) => c.fecha && DAY_KEY_FORMATTER.format(new Date(c.fecha)) === diaSeleccionado
+  );
+  const sinFecha = classes.filter((c) => !c.fecha);
+  const diaActivo = semana.find((d) => d.key === diaSeleccionado);
   const generoLabel =
     gym.genero === "solo_mujeres"
       ? "Gimnasio exclusivo para mujeres"
@@ -441,134 +417,159 @@ export default function GymDetailScreen() {
         )}
 
         {classes.length > 0 && (
-          <View style={styles.franjaRow}>
-            <Pressable
-              style={[styles.franjaChip, franja === null && styles.franjaChipActive]}
-              onPress={() => setFranja(null)}
-            >
-              <Text style={[styles.franjaChipText, franja === null && styles.franjaChipTextActive]}>
-                Todo el día
-              </Text>
-            </Pressable>
-            {FRANJAS.map((f) => (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.diaRow}
+            contentContainerStyle={styles.diaRowContent}
+          >
+            {semana.map((dia) => (
               <Pressable
-                key={f.key}
-                style={[styles.franjaChip, franja === f.key && styles.franjaChipActive]}
-                onPress={() => setFranja((prev) => (prev === f.key ? null : f.key))}
+                key={dia.key}
+                style={[styles.diaChip, diaSeleccionado === dia.key && styles.diaChipActive]}
+                onPress={() => setDiaSeleccionado(dia.key)}
               >
                 <Text
-                  style={[styles.franjaChipText, franja === f.key && styles.franjaChipTextActive]}
+                  style={[styles.diaChipLabel, diaSeleccionado === dia.key && styles.diaChipLabelActive]}
                 >
-                  {f.label}
+                  {dia.esHoy ? "Hoy" : dia.nombre.slice(0, 3)}
+                </Text>
+                <Text
+                  style={[styles.diaChipFecha, diaSeleccionado === dia.key && styles.diaChipFechaActive]}
+                >
+                  {dia.fechaLabel}
                 </Text>
               </Pressable>
             ))}
+          </ScrollView>
+        )}
+
+        {diaActivo && classes.length > 0 && (
+          <View style={styles.diaHeader}>
+            <Text style={styles.diaTitulo}>{diaActivo.esHoy ? "Hoy" : diaActivo.nombre}</Text>
+            <Text style={styles.diaFecha}>{diaActivo.fechaLabel}</Text>
           </View>
         )}
 
-        {classes.length > 0 && gruposFiltrados.length === 0 && (
-          <Text style={styles.subtitle}>No hay clases en esa franja horaria.</Text>
+        {classes.length > 0 && clasesDelDia.length === 0 && (
+          <Text style={styles.subtitle}>No hay clases programadas para este día.</Text>
         )}
 
-        {gruposFiltrados.map((grupo) => (
-          <View key={grupo.key} style={styles.diaGrupo}>
-            <View style={styles.diaHeader}>
-              <Text style={styles.diaTitulo}>{grupo.titulo}</Text>
-              {grupo.fechaLabel && <Text style={styles.diaFecha}>{grupo.fechaLabel}</Text>}
-            </View>
+        {clasesDelDia.map((clase) => {
+          const book = bookState[clase.id];
+          const sinCupos = clase.cuposDisponibles <= 0;
+          return (
+            <View key={clase.id} style={styles.card}>
+              <Text style={styles.cardTitle}>{clase.name}</Text>
+              <Text style={styles.cardSubtitle}>
+                {clase.fecha ? formatHora(clase.fecha) : "Hora por confirmar"}
+              </Text>
+              <Text style={styles.cardSubtitle}>
+                {precioEfectivo(clase) < clase.credits && (
+                  <Text style={styles.creditsStrikethrough}>{clase.credits} </Text>
+                )}
+                {precioEfectivo(clase)} créditos
+              </Text>
+              {clase.cuposDisponibles > 0 && clase.cuposDisponibles <= 2 && (
+                <Text style={styles.cuposAviso}>
+                  {clase.cuposDisponibles === 1
+                    ? "Último cupo disponible"
+                    : "Últimos 2 cupos disponibles"}
+                </Text>
+              )}
 
-            {grupo.classes.map((clase) => {
+              {book?.error && <Text style={styles.errorText}>{book.error}</Text>}
+              {book?.ok && <Text style={styles.successText}>¡Reservado!</Text>}
+
+              {!isLoaded ? null : !isSignedIn ? (
+                <Link href="/sign-in" asChild>
+                  <Pressable style={styles.button}>
+                    <Text style={styles.buttonText}>Inicia sesión para reservar</Text>
+                  </Pressable>
+                </Link>
+              ) : sinCupos ? (
+                (() => {
+                  const waitlist = waitlistState[clase.id];
+                  if (waitlist?.error) {
+                    return <Text style={styles.errorText}>{waitlist.error}</Text>;
+                  }
+                  if (waitlist?.enEspera) {
+                    return (
+                      <View>
+                        <Text style={styles.waitlistText}>
+                          Estás en la lista de espera
+                          {waitlist.posicion ? ` (posición ${waitlist.posicion})` : ""} — te
+                          avisamos si se libera un cupo.
+                        </Text>
+                        <Pressable
+                          style={[styles.button, styles.buttonOutline]}
+                          disabled={waitlist.loading}
+                          onPress={() => salirListaEspera(clase.id)}
+                        >
+                          {waitlist.loading ? (
+                            <ActivityIndicator color="#ff4f3f" />
+                          ) : (
+                            <Text style={styles.buttonOutlineText}>Salir de la lista</Text>
+                          )}
+                        </Pressable>
+                      </View>
+                    );
+                  }
+                  return (
+                    <Pressable
+                      style={styles.button}
+                      disabled={waitlist?.loading}
+                      onPress={() => unirseListaEspera(clase.id)}
+                    >
+                      {waitlist?.loading ? (
+                        <ActivityIndicator color="#fff" />
+                      ) : (
+                        <Text style={styles.buttonText}>Unirme a la lista de espera</Text>
+                      )}
+                    </Pressable>
+                  );
+                })()
+              ) : (
+                <Pressable
+                  disabled={book?.loading || book?.ok}
+                  onPress={() => reservar(clase.id)}
+                  style={[styles.button, book?.ok && styles.buttonDisabled]}
+                >
+                  {book?.loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.buttonText}>{book?.ok ? "Reservado" : "Reservar"}</Text>
+                  )}
+                </Pressable>
+              )}
+            </View>
+          );
+        })}
+
+        {sinFecha.length > 0 && (
+          <>
+            <View style={styles.diaHeader}>
+              <Text style={styles.diaTitulo}>Fecha por confirmar</Text>
+            </View>
+            {sinFecha.map((clase) => {
               const book = bookState[clase.id];
-              const sinCupos = clase.cuposDisponibles <= 0;
               return (
                 <View key={clase.id} style={styles.card}>
                   <Text style={styles.cardTitle}>{clase.name}</Text>
-                  <Text style={styles.cardSubtitle}>
-                    {clase.fecha ? formatHora(clase.fecha) : "Hora por confirmar"}
-                  </Text>
+                  <Text style={styles.cardSubtitle}>Hora por confirmar</Text>
                   <Text style={styles.cardSubtitle}>
                     {precioEfectivo(clase) < clase.credits && (
                       <Text style={styles.creditsStrikethrough}>{clase.credits} </Text>
                     )}
                     {precioEfectivo(clase)} créditos
                   </Text>
-                  {clase.cuposDisponibles > 0 && clase.cuposDisponibles <= 2 && (
-                    <Text style={styles.cuposAviso}>
-                      {clase.cuposDisponibles === 1
-                        ? "Último cupo disponible"
-                        : "Últimos 2 cupos disponibles"}
-                    </Text>
-                  )}
-
                   {book?.error && <Text style={styles.errorText}>{book.error}</Text>}
-                  {book?.ok && <Text style={styles.successText}>¡Reservado!</Text>}
-
-                  {!isLoaded ? null : !isSignedIn ? (
-                    <Link href="/sign-in" asChild>
-                      <Pressable style={styles.button}>
-                        <Text style={styles.buttonText}>Inicia sesión para reservar</Text>
-                      </Pressable>
-                    </Link>
-                  ) : sinCupos ? (
-                    (() => {
-                      const waitlist = waitlistState[clase.id];
-                      if (waitlist?.error) {
-                        return <Text style={styles.errorText}>{waitlist.error}</Text>;
-                      }
-                      if (waitlist?.enEspera) {
-                        return (
-                          <View>
-                            <Text style={styles.waitlistText}>
-                              Estás en la lista de espera
-                              {waitlist.posicion ? ` (posición ${waitlist.posicion})` : ""} — te
-                              avisamos si se libera un cupo.
-                            </Text>
-                            <Pressable
-                              style={[styles.button, styles.buttonOutline]}
-                              disabled={waitlist.loading}
-                              onPress={() => salirListaEspera(clase.id)}
-                            >
-                              {waitlist.loading ? (
-                                <ActivityIndicator color="#ff4f3f" />
-                              ) : (
-                                <Text style={styles.buttonOutlineText}>Salir de la lista</Text>
-                              )}
-                            </Pressable>
-                          </View>
-                        );
-                      }
-                      return (
-                        <Pressable
-                          style={styles.button}
-                          disabled={waitlist?.loading}
-                          onPress={() => unirseListaEspera(clase.id)}
-                        >
-                          {waitlist?.loading ? (
-                            <ActivityIndicator color="#fff" />
-                          ) : (
-                            <Text style={styles.buttonText}>Unirme a la lista de espera</Text>
-                          )}
-                        </Pressable>
-                      );
-                    })()
-                  ) : (
-                    <Pressable
-                      disabled={book?.loading || book?.ok}
-                      onPress={() => reservar(clase.id)}
-                      style={[styles.button, book?.ok && styles.buttonDisabled]}
-                    >
-                      {book?.loading ? (
-                        <ActivityIndicator color="#fff" />
-                      ) : (
-                        <Text style={styles.buttonText}>{book?.ok ? "Reservado" : "Reservar"}</Text>
-                      )}
-                    </Pressable>
-                  )}
+                  <Text style={styles.subtitle}>Todavía no tiene fecha confirmada.</Text>
                 </View>
               );
             })}
-          </View>
-        ))}
+          </>
+        )}
       </ScrollView>
 
       {viewerIndex !== null && (
@@ -618,16 +619,25 @@ const styles = StyleSheet.create({
   titleFavoriteIcon: { fontSize: 24, color: "#ff4f3f" },
   subtitle: { fontSize: 14, color: "#06300999", marginTop: 4 },
   sectionTitle: { fontSize: 17, fontWeight: "700", color: "#063009", marginTop: 24, marginBottom: 12 },
-  franjaRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
-  franjaChip: {
-    borderRadius: 999,
-    paddingVertical: 7,
-    paddingHorizontal: 14,
+  diaRow: { marginBottom: 16 },
+  diaRowContent: { flexDirection: "row", gap: 8 },
+  diaChip: {
+    alignItems: "center",
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     backgroundColor: "#06300908",
   },
-  franjaChipActive: { backgroundColor: "#063009" },
-  franjaChipText: { fontSize: 12, fontWeight: "700", color: "#06300999" },
-  franjaChipTextActive: { color: "#fff" },
+  diaChipActive: { backgroundColor: "#063009" },
+  diaChipLabel: {
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    color: "#06300999",
+  },
+  diaChipLabelActive: { color: "#fff" },
+  diaChipFecha: { fontSize: 10, color: "#06300977", marginTop: 2 },
+  diaChipFechaActive: { color: "#ffffffcc" },
   diaGrupo: { marginBottom: 20 },
   diaHeader: { flexDirection: "row", alignItems: "baseline", gap: 6, marginBottom: 10 },
   diaTitulo: { fontSize: 16, fontWeight: "800", color: "#063009" },
