@@ -34,11 +34,6 @@ export function GymsMap({ gyms }: { gyms: MapGym[] }) {
       {conUbicacion.length === 0 && (
         <View style={styles.emptyOverlay}>
           <Text style={styles.emptyText}>Ningún gimnasio tiene ubicación registrada todavía.</Text>
-          <Text style={styles.emptyText}>
-            [debug temporal] recibidos: {gyms.length} — con lat/lng:{" "}
-            {gyms.filter((g) => g.lat != null && g.lng != null).length} — ejemplo:{" "}
-            {JSON.stringify(gyms[0] ?? null)}
-          </Text>
         </View>
       )}
     </View>
