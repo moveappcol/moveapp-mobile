@@ -194,7 +194,10 @@ export default function SignInScreen() {
         style={styles.input}
         placeholder="Correo"
         autoCapitalize="none"
+        autoCorrect={false}
         keyboardType="email-address"
+        textContentType="username"
+        autoComplete="email"
         value={email}
         onChangeText={setEmail}
       />
@@ -204,6 +207,8 @@ export default function SignInScreen() {
         secureTextEntry
         autoCapitalize="none"
         autoCorrect={false}
+        textContentType="password"
+        autoComplete="password"
         value={password}
         onChangeText={setPassword}
       />

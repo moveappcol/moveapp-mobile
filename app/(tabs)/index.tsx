@@ -15,7 +15,6 @@ import { getCached, setCached } from "@/lib/cache";
 import { distanceKm } from "@/lib/geo";
 import { Skeleton } from "@/components/Skeleton";
 import { useFavorites } from "@/lib/favorites";
-import { GymsMap } from "@/components/GymsMap";
 
 const CACHE_KEY = "gyms";
 
@@ -80,7 +79,6 @@ export default function GimnasiosScreen() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [geoStatus, setGeoStatus] = useState<GeoStatus>("idle");
   const [onlyFavorites, setOnlyFavorites] = useState(false);
-  const [viewMode, setViewMode] = useState<"lista" | "mapa">("lista");
   const { isFavorite, toggleFavorite } = useFavorites();
 
   useEffect(() => {
@@ -198,37 +196,8 @@ export default function GimnasiosScreen() {
 
   const listHeader = (
     <>
-      <View style={styles.headerRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.wordmark}>UNIQUE</Text>
-          <Text style={styles.title}>Gimnasios afiliados</Text>
-        </View>
-        <View style={styles.viewToggle}>
-          <Pressable
-            style={[styles.viewToggleButton, viewMode === "lista" && styles.viewToggleButtonActive]}
-            onPress={() => setViewMode("lista")}
-          >
-            <Text
-              style={[
-                styles.viewToggleText,
-                viewMode === "lista" && styles.viewToggleTextActive,
-              ]}
-            >
-              Lista
-            </Text>
-          </Pressable>
-          <Pressable
-            style={[styles.viewToggleButton, viewMode === "mapa" && styles.viewToggleButtonActive]}
-            onPress={() => setViewMode("mapa")}
-          >
-            <Text
-              style={[styles.viewToggleText, viewMode === "mapa" && styles.viewToggleTextActive]}
-            >
-              Mapa
-            </Text>
-          </Pressable>
-        </View>
-      </View>
+      <Text style={styles.wordmark}>UNIQUE</Text>
+      <Text style={styles.title}>Gimnasios afiliados</Text>
       <Text style={styles.subtitle}>Busca gimnasios cerca de ti y filtra por actividad</Text>
 
       <View style={styles.searchBar}>
@@ -306,15 +275,6 @@ export default function GimnasiosScreen() {
     </>
   );
 
-  if (viewMode === "mapa") {
-    return (
-      <View style={styles.mapScreen}>
-        <View style={styles.mapHeaderPadding}>{listHeader}</View>
-        <GymsMap gyms={results} />
-      </View>
-    );
-  }
-
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       {listHeader}
@@ -379,19 +339,6 @@ export default function GimnasiosScreen() {
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
   container: { padding: 20, paddingBottom: 40 },
-  mapScreen: { flex: 1 },
-  mapHeaderPadding: { padding: 20, paddingBottom: 12 },
-  headerRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  viewToggle: {
-    flexDirection: "row",
-    backgroundColor: "#06300908",
-    borderRadius: 999,
-    padding: 3,
-  },
-  viewToggleButton: { borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
-  viewToggleButtonActive: { backgroundColor: "#063009" },
-  viewToggleText: { fontSize: 12, fontWeight: "700", color: "#06300999" },
-  viewToggleTextActive: { color: "#fff" },
   errorText: { color: "#ff4f3f", fontSize: 15 },
   comingSoon: { fontSize: 24, fontWeight: "800", color: "#ff4f3f", textTransform: "uppercase" },
   wordmark: { fontSize: 15, fontWeight: "700", color: "#063009" },

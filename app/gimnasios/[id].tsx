@@ -17,6 +17,7 @@ import { getCached, setCached } from "@/lib/cache";
 import { BackButton } from "@/components/BackButton";
 import { Skeleton } from "@/components/Skeleton";
 import { useFavorites } from "@/lib/favorites";
+import { GymLocationCard } from "@/components/GymLocationCard";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
@@ -58,6 +59,8 @@ type Gym = {
   activities: string[];
   city: string;
   address: string;
+  lat: number | null;
+  lng: number | null;
   photoDetailUrls: string[];
   photoDetailFullUrls: string[];
   genero: "todos" | "solo_mujeres" | "solo_hombres";
@@ -391,6 +394,12 @@ export default function GymDetailScreen() {
         <Text style={styles.subtitle}>{gym.activities.join(", ")}</Text>
         <Text style={styles.subtitle}>{gym.address}</Text>
 
+        {gym.lat !== null && gym.lng !== null && (
+          <View style={styles.locationCardWrap}>
+            <GymLocationCard lat={gym.lat} lng={gym.lng} name={gym.name} />
+          </View>
+        )}
+
         <View style={styles.accordionList}>
           <InfoAccordion title="Descripción" text={gym.description} />
           <InfoAccordion title="Puntualidad" text={gym.puntualidad} />
@@ -641,6 +650,7 @@ const styles = StyleSheet.create({
   diaHeader: { flexDirection: "row", alignItems: "baseline", gap: 6, marginBottom: 10 },
   diaTitulo: { fontSize: 16, fontWeight: "800", color: "#063009" },
   diaFecha: { fontSize: 13, color: "#06300980" },
+  locationCardWrap: { marginTop: 12 },
   accordionList: { marginTop: 16, gap: 8 },
   accordionItem: {
     borderWidth: 1,
