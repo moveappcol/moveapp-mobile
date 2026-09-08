@@ -57,7 +57,6 @@ const COMO_FUNCIONA = [
 ];
 
 const QUIENES_SOMOS = [
-  "Somos una plataforma que sabe que cada persona es única.",
   "Creemos que no existe una sola manera de entrenar. Por eso, a través de UNIQUE puedes explorar diferentes disciplinas en distintos gimnasios y estudios de la ciudad, hasta encontrar esa rutina que se adapta a TI.",
   "Con UNIQUE, tus créditos son tu llave. Los usas donde quieras, cuando quieras, y descubres experiencias de entrenamiento que antes solo veías desde afuera.",
   "No creemos en el entrenamiento único para todos. Creemos en la libertad de moverte a tu manera — y en construir, junto a los centros de entrenamiento que confían en nosotros, una forma más flexible, honesta y humana de cuidar tu bienestar.",

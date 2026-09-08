@@ -74,7 +74,7 @@ export default function GimnasiosScreen() {
     data: cached ?? null,
   });
   const [query, setQuery] = useState("");
-  const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+  const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [geoStatus, setGeoStatus] = useState<GeoStatus>("idle");
@@ -118,9 +118,7 @@ export default function GimnasiosScreen() {
   }
 
   function toggleActivity(activity: string) {
-    setSelectedActivities((prev) =>
-      prev.includes(activity) ? prev.filter((a) => a !== activity) : [...prev, activity]
-    );
+    setSelectedActivity((prev) => (prev === activity ? null : activity));
   }
 
   const gyms = state.data?.gyms ?? [];
@@ -135,9 +133,7 @@ export default function GimnasiosScreen() {
 
     let list = gyms
       .filter((gym) =>
-        selectedActivities.length === 0
-          ? true
-          : selectedActivities.some((a) => gym.activities.includes(a))
+        selectedActivity === null ? true : gym.activities.includes(selectedActivity)
       )
       .filter((gym) =>
         q === ""
@@ -158,7 +154,7 @@ export default function GimnasiosScreen() {
     }
 
     return list;
-  }, [gyms, query, selectedActivities, userLocation, onlyFavorites, isFavorite]);
+  }, [gyms, query, selectedActivity, userLocation, onlyFavorites, isFavorite]);
 
   if (state.loading) {
     return (
@@ -237,7 +233,7 @@ export default function GimnasiosScreen() {
             </Text>
           </Pressable>
           {activityOptions.map((activity) => {
-            const active = selectedActivities.includes(activity);
+            const active = selectedActivity === activity;
             return (
               <Pressable
                 key={activity}
