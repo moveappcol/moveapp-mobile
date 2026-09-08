@@ -95,6 +95,10 @@ export default function CompletarPerfilScreen() {
     <>
       <Stack.Screen options={{ headerShown: true, title: "Completa tu perfil", headerBackVisible: false }} />
       <ScrollView contentContainerStyle={styles.container}>
+        <Pressable onPress={() => router.replace("/")} hitSlop={10} style={styles.skipButton}>
+          <Text style={styles.skipButtonText}>Completar después</Text>
+        </Pressable>
+
         <Text style={styles.subtitle}>
           Necesitamos estos datos para poder identificarte en cada reserva. Solo te los pedimos
           una vez.
@@ -229,6 +233,8 @@ export default function CompletarPerfilScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 20, paddingBottom: 48 },
+  skipButton: { alignSelf: "flex-end", marginBottom: 12 },
+  skipButtonText: { fontSize: 13, fontWeight: "700", color: "#ff4f3f" },
   subtitle: { fontSize: 13, color: "#06300999", lineHeight: 19, marginBottom: 20 },
   label: { fontSize: 13, fontWeight: "700", color: "#063009", marginTop: 16, marginBottom: 6 },
   hint: { fontSize: 11, color: "#06300977", marginTop: 6 },

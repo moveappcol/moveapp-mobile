@@ -1,5 +1,5 @@
 import { useAuth } from "@clerk/expo";
-import { Tabs, useRouter } from "expo-router";
+import { Tabs } from "expo-router";
 import { useEffect } from "react";
 import { TabIcon } from "@/components/TabIcon";
 import { apiFetch } from "@/lib/api";
@@ -34,7 +34,6 @@ function warmOtherTabsCache(token: string | null, credits: CreditsResponse) {
 
 export default function TabsLayout() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
-  const router = useRouter();
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
@@ -43,9 +42,6 @@ export default function TabsLayout() {
         const token = await getToken();
         const credits = await apiFetch<CreditsResponse>("/me/credits", token);
         warmOtherTabsCache(token, credits);
-        if (!credits.perfilCompleto) {
-          router.replace("/completar-perfil");
-        }
         registerForPushNotificationsAsync().then((pushToken) => {
           if (pushToken) {
             apiFetch("/push-token", token, { method: "POST", body: { token: pushToken } }).catch(
@@ -57,7 +53,7 @@ export default function TabsLayout() {
         // si falla la verificación, dejamos seguir — no bloqueamos por un error de red
       }
     })();
-  }, [isLoaded, isSignedIn, getToken, router]);
+  }, [isLoaded, isSignedIn, getToken]);
 
   return (
     <Tabs
