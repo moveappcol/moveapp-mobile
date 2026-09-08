@@ -17,8 +17,6 @@ export default function SignUpScreen() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [code, setCode] = useState("");
-  const [pendingVerification, setPendingVerification] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -26,71 +24,29 @@ export default function SignUpScreen() {
     return (err as { errors?: { message?: string }[] })?.errors?.[0]?.message ?? fallback;
   }
 
+  /** Sin verificación por código: la cuenta se crea y se activa de una vez,
+   * para que sea rápido crear cuenta. Depende de que "Verify at sign-up"
+   * esté apagado en el dashboard de Clerk — si sigue prendido, Clerk
+   * devuelve status "missing_requirements" y mostramos el error genérico. */
   async function onSubmit() {
     if (!isLoaded || loading) return;
     setError(null);
     setLoading(true);
 
     try {
-      await signUp.create({ emailAddress: email.trim(), password });
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-      setPendingVerification(true);
-    } catch (err) {
-      setError(errorMessage(err, "No pudimos crear tu cuenta. Intenta de nuevo."));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function onVerify() {
-    if (!isLoaded || loading) return;
-    setError(null);
-    setLoading(true);
-
-    try {
-      const result = await signUp.attemptEmailAddressVerification({ code: code.trim() });
+      const result = await signUp.create({ emailAddress: email.trim(), password });
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
         router.replace("/completar-perfil");
       } else {
-        setError("Código incorrecto o incompleto.");
+        setError("No pudimos completar el registro. Intenta de nuevo.");
       }
     } catch (err) {
-      setError(errorMessage(err, "Código incorrecto o incompleto."));
+      setError(errorMessage(err, "No pudimos crear tu cuenta. Intenta de nuevo."));
     } finally {
       setLoading(false);
     }
-  }
-
-  if (pendingVerification) {
-    return (
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <Text style={styles.title}>Revisa tu correo</Text>
-        <Text style={styles.subtitle}>Te mandamos un código a {email}</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Código de verificación"
-          keyboardType="number-pad"
-          value={code}
-          onChangeText={setCode}
-        />
-
-        {error && <Text style={styles.error}>{error}</Text>}
-
-        <Pressable style={styles.button} onPress={onVerify} disabled={loading}>
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Confirmar</Text>
-          )}
-        </Pressable>
-      </KeyboardAvoidingView>
-    );
   }
 
   return (

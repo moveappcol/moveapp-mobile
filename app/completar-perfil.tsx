@@ -1,9 +1,11 @@
 import { useAuth, useUser } from "@clerk/expo";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +16,21 @@ import {
 } from "react-native";
 import { apiFetch } from "@/lib/api";
 import { GENEROS, TIPOS_DOCUMENTO } from "@/lib/documento";
+
+const HOY = new Date();
+const FECHA_MAX_18_ANOS = new Date(HOY.getFullYear() - 18, HOY.getMonth(), HOY.getDate());
+const FECHA_MIN = new Date(1920, 0, 1);
+
+function formatFechaISO(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function formatFechaLegible(d: Date): string {
+  return d.toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" });
+}
 
 type SaveResult = { ok: true } | { ok: false; error: string };
 
@@ -27,7 +44,8 @@ export default function CompletarPerfilScreen() {
   const [telefono, setTelefono] = useState("");
   const [tipoDocumento, setTipoDocumento] = useState<string | null>(null);
   const [cedula, setCedula] = useState("");
-  const [fechaNacimiento, setFechaNacimiento] = useState("");
+  const [fechaNacimiento, setFechaNacimiento] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [genero, setGenero] = useState<string | null>(null);
   const [tratamientoDatosAceptado, setTratamientoDatosAceptado] = useState(false);
   const [terminosAceptados, setTerminosAceptados] = useState(false);
@@ -37,6 +55,10 @@ export default function CompletarPerfilScreen() {
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit() {
+    if (!fechaNacimiento) {
+      setError("Elige tu fecha de nacimiento.");
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
@@ -49,7 +71,7 @@ export default function CompletarPerfilScreen() {
           telefono,
           tipoDocumento,
           cedula,
-          fechaNacimiento,
+          fechaNacimiento: formatFechaISO(fechaNacimiento),
           genero,
           terminosAceptados,
           tratamientoDatosAceptado,
@@ -111,13 +133,31 @@ export default function CompletarPerfilScreen() {
         <TextInput style={styles.input} value={cedula} onChangeText={setCedula} />
 
         <Text style={styles.label}>Fecha de nacimiento</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="AAAA-MM-DD"
-          keyboardType="number-pad"
-          value={fechaNacimiento}
-          onChangeText={setFechaNacimiento}
-        />
+        <Pressable style={styles.input} onPress={() => setShowDatePicker(true)}>
+          <Text style={fechaNacimiento ? styles.dateText : styles.datePlaceholder}>
+            {fechaNacimiento ? formatFechaLegible(fechaNacimiento) : "Toca para elegir tu fecha"}
+          </Text>
+        </Pressable>
+        {showDatePicker && (
+          <>
+            <DateTimePicker
+              value={fechaNacimiento ?? FECHA_MAX_18_ANOS}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              maximumDate={FECHA_MAX_18_ANOS}
+              minimumDate={FECHA_MIN}
+              onChange={(event, selectedDate) => {
+                if (Platform.OS === "android") setShowDatePicker(false);
+                if (event.type === "set" && selectedDate) setFechaNacimiento(selectedDate);
+              }}
+            />
+            {Platform.OS === "ios" && (
+              <Pressable style={styles.doneButton} onPress={() => setShowDatePicker(false)}>
+                <Text style={styles.doneButtonText}>Listo</Text>
+              </Pressable>
+            )}
+          </>
+        )}
         <Text style={styles.hint}>UNIQUE es solo para mayores de 18 años.</Text>
 
         <Text style={styles.label}>Género</Text>
@@ -192,6 +232,10 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 13, color: "#06300999", lineHeight: 19, marginBottom: 20 },
   label: { fontSize: 13, fontWeight: "700", color: "#063009", marginTop: 16, marginBottom: 6 },
   hint: { fontSize: 11, color: "#06300977", marginTop: 6 },
+  dateText: { fontSize: 15, color: "#063009" },
+  datePlaceholder: { fontSize: 15, color: "#06300966" },
+  doneButton: { alignSelf: "flex-end", paddingVertical: 8, paddingHorizontal: 16 },
+  doneButtonText: { color: "#ff4f3f", fontSize: 15, fontWeight: "700" },
   input: {
     borderWidth: 1,
     borderColor: "#06300933",
