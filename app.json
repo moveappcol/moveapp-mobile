@@ -61,7 +61,13 @@
           "color": "#ff4f3f"
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "Usamos este dato para medir qué tan bien están funcionando nuestros anuncios y mostrarte promociones más relevantes."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

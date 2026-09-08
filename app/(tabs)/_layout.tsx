@@ -5,6 +5,7 @@ import { TabIcon } from "@/components/TabIcon";
 import { apiFetch } from "@/lib/api";
 import { setCached } from "@/lib/cache";
 import { registerForPushNotificationsAsync } from "@/lib/push-notifications";
+import { requestTrackingConsent } from "@/lib/tracking-consent";
 
 type CreditsResponse = { credits: number; vencimiento: string | null; perfilCompleto: boolean };
 
@@ -42,6 +43,13 @@ export default function TabsLayout() {
         const token = await getToken();
         const credits = await apiFetch<CreditsResponse>("/me/credits", token);
         warmOtherTabsCache(token, credits);
+        requestTrackingConsent().then((granted) => {
+          if (!granted) {
+            apiFetch("/tracking-consent", token, { method: "POST", body: { granted: false } }).catch(
+              () => {}
+            );
+          }
+        });
         registerForPushNotificationsAsync().then((pushToken) => {
           if (pushToken) {
             apiFetch("/push-token", token, { method: "POST", body: { token: pushToken } }).catch(
