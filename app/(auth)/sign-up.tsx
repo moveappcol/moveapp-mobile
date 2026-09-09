@@ -59,6 +59,7 @@ export default function SignUpScreen() {
       <TextInput
         style={styles.input}
         placeholder="Correo"
+        placeholderTextColor="#06300966"
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
@@ -67,6 +68,7 @@ export default function SignUpScreen() {
       <TextInput
         style={styles.input}
         placeholder="Contraseña"
+        placeholderTextColor="#06300966"
         secureTextEntry
         autoCapitalize="none"
         autoCorrect={false}

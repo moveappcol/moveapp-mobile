@@ -141,6 +141,7 @@ export default function TopupCheckoutScreen() {
               style={styles.input}
               keyboardType="number-pad"
               placeholder="4242 4242 4242 4242"
+              placeholderTextColor="#06300966"
               value={number}
               onChangeText={setNumber}
             />
@@ -156,6 +157,7 @@ export default function TopupCheckoutScreen() {
                   keyboardType="number-pad"
                   maxLength={2}
                   placeholder="MM"
+                  placeholderTextColor="#06300966"
                   value={expMonth}
                   onChangeText={setExpMonth}
                 />
@@ -167,6 +169,7 @@ export default function TopupCheckoutScreen() {
                   keyboardType="number-pad"
                   maxLength={2}
                   placeholder="AA"
+                  placeholderTextColor="#06300966"
                   value={expYear}
                   onChangeText={setExpYear}
                 />

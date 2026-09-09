@@ -117,6 +117,7 @@ export default function SignInScreen() {
         <TextInput
           style={styles.input}
           placeholder="Correo"
+          placeholderTextColor="#06300966"
           autoCapitalize="none"
           keyboardType="email-address"
           value={email}
@@ -152,6 +153,7 @@ export default function SignInScreen() {
         <TextInput
           style={styles.input}
           placeholder="Código de verificación"
+          placeholderTextColor="#06300966"
           keyboardType="number-pad"
           value={code}
           onChangeText={setCode}
@@ -159,6 +161,7 @@ export default function SignInScreen() {
         <TextInput
           style={styles.input}
           placeholder="Nueva contraseña"
+          placeholderTextColor="#06300966"
           secureTextEntry
           autoCapitalize="none"
           autoCorrect={false}
@@ -193,6 +196,7 @@ export default function SignInScreen() {
       <TextInput
         style={styles.input}
         placeholder="Correo"
+        placeholderTextColor="#06300966"
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="email-address"
@@ -204,6 +208,7 @@ export default function SignInScreen() {
       <TextInput
         style={styles.input}
         placeholder="Contraseña"
+        placeholderTextColor="#06300966"
         secureTextEntry
         autoCapitalize="none"
         autoCorrect={false}

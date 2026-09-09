@@ -202,6 +202,7 @@ export default function GimnasiosScreen() {
           value={query}
           onChangeText={setQuery}
           placeholder="Buscar gimnasio..."
+          placeholderTextColor="#06300966"
           style={styles.searchInput}
         />
       </View>
