@@ -174,6 +174,13 @@ function formatHora(fecha: string): string {
   });
 }
 
+const BOOKING_CUTOFF_MINUTES = 20;
+
+function isBookingClosed(fecha: string): boolean {
+  const minutesUntilClass = (new Date(fecha).getTime() - Date.now()) / (1000 * 60);
+  return minutesUntilClass < BOOKING_CUTOFF_MINUTES;
+}
+
 type GymDetailResponse = { gym: Gym; classes: Clase[] };
 
 type ScreenState = { loading: boolean; error: string | null; data: GymDetailResponse | null };
@@ -506,7 +513,11 @@ export default function GymDetailScreen() {
               )}
               {book?.ok && <Text style={styles.successText}>¡Reservado!</Text>}
 
-              {!isLoaded ? null : !isSignedIn ? (
+              {!clase.fecha ? (
+                <Text style={styles.mutedText}>Todavía no tiene fecha confirmada.</Text>
+              ) : !sinCupos && isBookingClosed(clase.fecha) ? (
+                <Text style={styles.mutedText}>Las reservas para esta clase ya cerraron.</Text>
+              ) : !isLoaded ? null : !isSignedIn ? (
                 <Link href="/sign-in" asChild>
                   <Pressable style={styles.button}>
                     <Text style={styles.buttonText}>Inicia sesión para reservar</Text>
@@ -708,6 +719,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   errorText: { color: "#ff4f3f", fontSize: 13, marginTop: 8 },
+  mutedText: { color: "#06300980", fontSize: 13, marginTop: 8 },
   successText: { color: "#0a8a3f", fontSize: 13, marginTop: 8, fontWeight: "700" },
   button: {
     marginTop: 12,
