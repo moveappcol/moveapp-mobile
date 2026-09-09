@@ -1,5 +1,5 @@
 import { useAuth } from "@clerk/expo";
-import { Link, Stack, useLocalSearchParams } from "expo-router";
+import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -178,7 +178,10 @@ type GymDetailResponse = { gym: Gym; classes: Clase[] };
 
 type ScreenState = { loading: boolean; error: string | null; data: GymDetailResponse | null };
 
-type BookState = Record<string, { loading: boolean; error: string | null; ok: boolean }>;
+type BookState = Record<
+  string,
+  { loading: boolean; error: string | null; ok: boolean; code?: string }
+>;
 
 type WaitlistState = Record<
   string,
@@ -187,6 +190,7 @@ type WaitlistState = Record<
 
 export default function GymDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const semana = useMemo(() => semanaActual(), []);
@@ -299,7 +303,7 @@ export default function GymDetailScreen() {
     setBookState((prev) => ({ ...prev, [claseId]: { loading: true, error: null, ok: false } }));
     try {
       const token = await getToken();
-      const result = await apiFetch<{ ok: boolean; error?: string }>(
+      const result = await apiFetch<{ ok: boolean; error?: string; code?: string }>(
         `/gimnasios/${id}/reservar`,
         token,
         { method: "POST", body: { claseId } }
@@ -310,7 +314,12 @@ export default function GymDetailScreen() {
       } else {
         setBookState((prev) => ({
           ...prev,
-          [claseId]: { loading: false, error: result.error ?? "No pudimos reservar.", ok: false },
+          [claseId]: {
+            loading: false,
+            error: result.error ?? "No pudimos reservar.",
+            ok: false,
+            code: result.code,
+          },
         }));
       }
     } catch (err) {
@@ -487,6 +496,14 @@ export default function GymDetailScreen() {
               )}
 
               {book?.error && <Text style={styles.errorText}>{book.error}</Text>}
+              {book?.code === "perfil_incompleto" && (
+                <Pressable
+                  style={[styles.button, styles.buttonOutline]}
+                  onPress={() => router.push("/completar-perfil")}
+                >
+                  <Text style={styles.buttonOutlineText}>Completar perfil</Text>
+                </Pressable>
+              )}
               {book?.ok && <Text style={styles.successText}>¡Reservado!</Text>}
 
               {!isLoaded ? null : !isSignedIn ? (

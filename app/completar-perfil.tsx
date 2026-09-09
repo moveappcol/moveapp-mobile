@@ -1,7 +1,7 @@
 import { useAuth, useUser } from "@clerk/expo";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Stack, useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -16,6 +16,25 @@ import {
 } from "react-native";
 import { apiFetch } from "@/lib/api";
 import { GENEROS, TIPOS_DOCUMENTO } from "@/lib/documento";
+
+type PerfilActual = {
+  perfilCompleto: boolean;
+  nombre: string | null;
+  apellido: string | null;
+  telefono: string | null;
+  tipoDocumento: string | null;
+  cedula: string | null;
+  fechaNacimiento: string | null;
+  genero: string | null;
+  terminosAceptados: boolean;
+  tratamientoDatosAceptado: boolean;
+  marketingAceptado: boolean;
+};
+
+function parseFechaISO(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
 
 const HOY = new Date();
 const FECHA_MAX_18_ANOS = new Date(HOY.getFullYear() - 18, HOY.getMonth(), HOY.getDate());
@@ -53,6 +72,34 @@ export default function CompletarPerfilScreen() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadingPerfil, setLoadingPerfil] = useState(true);
+  const [yaEstabaCompleto, setYaEstabaCompleto] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = await getToken();
+        const perfil = await apiFetch<PerfilActual>("/me/credits", token);
+        setYaEstabaCompleto(perfil.perfilCompleto);
+        if (perfil.nombre) setNombre(perfil.nombre);
+        if (perfil.apellido) setApellido(perfil.apellido);
+        if (perfil.telefono) setTelefono(perfil.telefono);
+        if (perfil.tipoDocumento) setTipoDocumento(perfil.tipoDocumento);
+        if (perfil.cedula) setCedula(perfil.cedula);
+        if (perfil.fechaNacimiento) setFechaNacimiento(parseFechaISO(perfil.fechaNacimiento));
+        if (perfil.genero) setGenero(perfil.genero);
+        setTerminosAceptados(perfil.terminosAceptados);
+        setTratamientoDatosAceptado(perfil.tratamientoDatosAceptado);
+        setMarketingAceptado(perfil.marketingAceptado);
+      } catch {
+        // si falla, se queda con los valores en blanco / de Clerk — la
+        // persona puede llenar todo de nuevo sin problema
+      } finally {
+        setLoadingPerfil(false);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    })();
+  }, []);
 
   async function handleSubmit() {
     if (!fechaNacimiento) {
@@ -80,7 +127,11 @@ export default function CompletarPerfilScreen() {
       });
 
       if (result.ok) {
-        router.replace("/");
+        if (yaEstabaCompleto) {
+          router.back();
+        } else {
+          router.replace("/");
+        }
       } else {
         setError(result.error);
       }
@@ -91,17 +142,37 @@ export default function CompletarPerfilScreen() {
     }
   }
 
+  if (loadingPerfil) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Perfil" }} />
+        <View style={styles.centerLoading}>
+          <ActivityIndicator />
+        </View>
+      </>
+    );
+  }
+
   return (
     <>
-      <Stack.Screen options={{ headerShown: true, title: "Completa tu perfil", headerBackVisible: false }} />
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: yaEstabaCompleto ? "Editar perfil" : "Completa tu perfil",
+          headerBackVisible: yaEstabaCompleto,
+        }}
+      />
       <ScrollView contentContainerStyle={styles.container}>
-        <Pressable onPress={() => router.replace("/")} hitSlop={10} style={styles.skipButton}>
-          <Text style={styles.skipButtonText}>Completar después</Text>
-        </Pressable>
+        {!yaEstabaCompleto && (
+          <Pressable onPress={() => router.replace("/")} hitSlop={10} style={styles.skipButton}>
+            <Text style={styles.skipButtonText}>Completar después</Text>
+          </Pressable>
+        )}
 
         <Text style={styles.subtitle}>
-          Necesitamos estos datos para poder identificarte en cada reserva. Solo te los pedimos
-          una vez.
+          {yaEstabaCompleto
+            ? "Actualiza tus datos personales."
+            : "Necesitamos estos datos para poder identificarte en cada reserva. Solo te los pedimos una vez."}
         </Text>
 
         <Text style={styles.label}>Nombre</Text>
@@ -223,7 +294,7 @@ export default function CompletarPerfilScreen() {
           {submitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Continuar</Text>
+            <Text style={styles.buttonText}>{yaEstabaCompleto ? "Guardar cambios" : "Continuar"}</Text>
           )}
         </Pressable>
       </ScrollView>
@@ -233,6 +304,7 @@ export default function CompletarPerfilScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 20, paddingBottom: 48 },
+  centerLoading: { flex: 1, alignItems: "center", justifyContent: "center" },
   skipButton: { alignSelf: "flex-end", marginBottom: 12 },
   skipButtonText: { fontSize: 13, fontWeight: "700", color: "#ff4f3f" },
   subtitle: { fontSize: 13, color: "#06300999", lineHeight: 19, marginBottom: 20 },

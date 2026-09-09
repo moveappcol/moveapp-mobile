@@ -213,6 +213,12 @@ function SignedInView() {
         </View>
       )}
 
+      <Link href="/completar-perfil" asChild>
+        <Pressable style={styles.editProfileButton}>
+          <Text style={styles.editProfileText}>Editar información personal</Text>
+        </Pressable>
+      </Link>
+
       <Pressable style={styles.signOutButton} onPress={() => signOut()}>
         <Text style={styles.signOutText}>Cerrar sesión</Text>
       </Pressable>
@@ -311,6 +317,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   secondaryButtonText: { color: "#063009", fontSize: 16, fontWeight: "700" },
+  editProfileButton: {
+    marginTop: 24,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#06300933",
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  editProfileText: { color: "#063009", fontSize: 15, fontWeight: "700" },
   signOutButton: {
     marginTop: "auto",
     borderRadius: 999,
