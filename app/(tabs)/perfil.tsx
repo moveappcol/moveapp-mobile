@@ -65,6 +65,8 @@ function SignedInView() {
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [changingPlan, setChangingPlan] = useState(false);
   const [changePlanError, setChangePlanError] = useState<string | null>(null);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -111,6 +113,44 @@ function SignedInView() {
       setCancelError(err instanceof Error ? err.message : "No pudimos cancelar tu plan.");
     } finally {
       setCancelling(false);
+    }
+  }
+
+  function confirmDeleteAccount() {
+    Alert.alert(
+      "Eliminar cuenta",
+      "Esto borra tu perfil, créditos y tu acceso de forma permanente. No se puede deshacer. ¿Seguro que quieres continuar?",
+      [
+        { text: "No", style: "cancel" },
+        {
+          text: "Sí, eliminar mi cuenta",
+          style: "destructive",
+          onPress: () =>
+            Alert.alert(
+              "¿Estás completamente segura?",
+              "Vas a perder el acceso a tu cuenta y tus créditos para siempre.",
+              [
+                { text: "No", style: "cancel" },
+                { text: "Eliminar mi cuenta", style: "destructive", onPress: deleteAccount },
+              ]
+            ),
+        },
+      ]
+    );
+  }
+
+  async function deleteAccount() {
+    setDeletingAccount(true);
+    setDeleteError(null);
+    try {
+      const token = await getToken();
+      await apiFetch("/me/eliminar-cuenta", token, { method: "POST" });
+      await signOut();
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "No pudimos eliminar tu cuenta. Intenta de nuevo."
+      );
+      setDeletingAccount(false);
     }
   }
 
@@ -222,6 +262,19 @@ function SignedInView() {
       <Pressable style={styles.signOutButton} onPress={() => signOut()}>
         <Text style={styles.signOutText}>Cerrar sesión</Text>
       </Pressable>
+
+      <Pressable
+        style={styles.deleteAccountButton}
+        onPress={confirmDeleteAccount}
+        disabled={deletingAccount}
+      >
+        {deletingAccount ? (
+          <ActivityIndicator color="#ff4f3f" size="small" />
+        ) : (
+          <Text style={styles.deleteAccountText}>Eliminar cuenta</Text>
+        )}
+      </Pressable>
+      {deleteError && <Text style={styles.cancelPlanError}>{deleteError}</Text>}
     </View>
   );
 }
@@ -335,4 +388,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   signOutText: { color: "#ff4f3f", fontSize: 15, fontWeight: "700" },
+  deleteAccountButton: {
+    marginTop: 12,
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+  deleteAccountText: { color: "#ff4f3f99", fontSize: 13, fontWeight: "600" },
 });
