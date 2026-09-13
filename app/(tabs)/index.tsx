@@ -259,7 +259,7 @@ export default function GimnasiosScreen() {
           </Text>
           <Pressable style={styles.locationButton} onPress={useMyLocation} disabled={geoStatus === "loading"}>
             <Text style={styles.locationButtonText}>
-              {geoStatus === "loading" ? "Buscando…" : "Usar mi ubicación"}
+              {geoStatus === "loading" ? "Buscando…" : "Continuar"}
             </Text>
           </Pressable>
           {geoStatus === "denied" && (

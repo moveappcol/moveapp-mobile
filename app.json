@@ -65,7 +65,7 @@
       [
         "expo-tracking-transparency",
         {
-          "userTrackingPermission": "Usamos este dato para medir qué tan bien están funcionando nuestros anuncios y mostrarte promociones más relevantes."
+          "userTrackingPermission": "Usamos este dato para medir qué tan bien están funcionando nuestros anuncios."
         }
       ]
     ],
