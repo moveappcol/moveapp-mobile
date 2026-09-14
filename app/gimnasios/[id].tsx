@@ -518,7 +518,14 @@ export default function GymDetailScreen() {
                   <Text style={styles.buttonOutlineText}>Completar perfil</Text>
                 </Pressable>
               )}
-              {book?.ok && <Text style={styles.successText}>¡Reservado!</Text>}
+              {book?.ok && (
+                <View style={styles.confirmBox}>
+                  <View style={styles.confirmCheck}>
+                    <Text style={styles.confirmCheckIcon}>✓</Text>
+                  </View>
+                  <Text style={styles.confirmBoxText}>Reserva confirmada.</Text>
+                </View>
+              )}
 
               {yaReservada ? (
                 <Text style={styles.successText}>Ya reservaste esta clase.</Text>
@@ -730,6 +737,28 @@ const styles = StyleSheet.create({
   errorText: { color: "#ff4f3f", fontSize: 13, marginTop: 8 },
   mutedText: { color: "#06300980", fontSize: 13, marginTop: 8 },
   successText: { color: "#0a8a3f", fontSize: 13, marginTop: 8, fontWeight: "700" },
+  confirmBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(6,48,9,0.2)",
+    backgroundColor: "rgba(6,48,9,0.05)",
+  },
+  confirmCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#063009",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmCheckIcon: { color: "#fff", fontSize: 12, fontWeight: "700" },
+  confirmBoxText: { color: "#063009", fontSize: 13, fontWeight: "700" },
   button: {
     marginTop: 12,
     backgroundColor: "#ff4f3f",
