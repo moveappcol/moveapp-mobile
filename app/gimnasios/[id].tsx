@@ -183,7 +183,7 @@ function isBookingClosed(fecha: string): boolean {
   return minutesUntilClass < BOOKING_CUTOFF_MINUTES;
 }
 
-type GymDetailResponse = { gym: Gym; classes: Clase[] };
+type GymDetailResponse = { gym: Gym; classes: Clase[]; reservedClaseIds?: string[] };
 
 type ScreenState = { loading: boolean; error: string | null; data: GymDetailResponse | null };
 
@@ -240,7 +240,10 @@ export default function GymDetailScreen() {
 
   useEffect(() => {
     if (!isSignedIn || !state.data) return;
-    const llenas = state.data.classes.filter((c) => c.cuposDisponibles <= 0);
+    const reservedIds = new Set(state.data.reservedClaseIds ?? []);
+    const llenas = state.data.classes.filter(
+      (c) => c.cuposDisponibles <= 0 && !reservedIds.has(c.id)
+    );
     for (const clase of llenas) {
       if (waitlistState[clase.id]) continue;
       (async () => {
@@ -368,7 +371,8 @@ export default function GymDetailScreen() {
     );
   }
 
-  const { gym, classes } = state.data;
+  const { gym, classes, reservedClaseIds } = state.data;
+  const reservedSet = new Set(reservedClaseIds ?? []);
   const diaActivo = semana.find((d) => d.key === diaSeleccionado) ?? semana[0];
   const clasesDelDia = classes.filter(
     (c) => c.fecha && DAY_KEY_FORMATTER.format(new Date(c.fecha)) === diaActivo.key
@@ -484,6 +488,7 @@ export default function GymDetailScreen() {
         {clasesDelDia.map((clase) => {
           const book = bookState[clase.id];
           const sinCupos = clase.cuposDisponibles <= 0;
+          const yaReservada = reservedSet.has(clase.id) && !book?.ok;
           return (
             <View key={clase.id} style={styles.card}>
               <Text style={styles.cardTitle}>{clase.name}</Text>
@@ -515,7 +520,9 @@ export default function GymDetailScreen() {
               )}
               {book?.ok && <Text style={styles.successText}>¡Reservado!</Text>}
 
-              {!clase.fecha ? (
+              {yaReservada ? (
+                <Text style={styles.successText}>Ya reservaste esta clase.</Text>
+              ) : !clase.fecha ? (
                 <Text style={styles.mutedText}>Todavía no tiene fecha confirmada.</Text>
               ) : !sinCupos && isBookingClosed(clase.fecha) ? (
                 <Text style={styles.mutedText}>Las reservas para esta clase ya cerraron.</Text>
