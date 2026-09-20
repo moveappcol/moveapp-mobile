@@ -1,10 +1,11 @@
 import { useAuth, useUser } from "@clerk/expo";
 import { Link } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
 import { CREDIT_PLANS } from "@/lib/credits-pricing";
+import { whatsappUrl } from "@/lib/whatsapp";
 
 const CACHE_KEY = "perfil";
 
@@ -46,6 +47,10 @@ function GuestView() {
           <Text style={styles.secondaryButtonText}>Crear cuenta</Text>
         </Pressable>
       </Link>
+
+      <Pressable style={styles.whatsappButton} onPress={() => Linking.openURL(whatsappUrl())}>
+        <Text style={styles.whatsappButtonText}>¿Dudas? Escríbenos por WhatsApp</Text>
+      </Pressable>
     </View>
   );
 }
@@ -253,11 +258,21 @@ function SignedInView() {
         </View>
       )}
 
+      <Link href="/(tabs)/reservas" asChild>
+        <Pressable style={styles.editProfileButton}>
+          <Text style={styles.editProfileText}>Ver mis reservas</Text>
+        </Pressable>
+      </Link>
+
       <Link href="/completar-perfil" asChild>
         <Pressable style={styles.editProfileButton}>
           <Text style={styles.editProfileText}>Editar información personal</Text>
         </Pressable>
       </Link>
+
+      <Pressable style={styles.whatsappButton} onPress={() => Linking.openURL(whatsappUrl())}>
+        <Text style={styles.whatsappButtonText}>¿Dudas? Escríbenos por WhatsApp</Text>
+      </Pressable>
 
       <Pressable style={styles.signOutButton} onPress={() => signOut()}>
         <Text style={styles.signOutText}>Cerrar sesión</Text>
@@ -379,6 +394,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   editProfileText: { color: "#063009", fontSize: 15, fontWeight: "700" },
+  whatsappButton: {
+    marginTop: 12,
+    borderRadius: 999,
+    backgroundColor: "#25D366",
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  whatsappButtonText: { color: "#fff", fontSize: 15, fontWeight: "700" },
   signOutButton: {
     marginTop: "auto",
     borderRadius: 999,

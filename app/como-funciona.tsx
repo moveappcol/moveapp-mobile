@@ -1,8 +1,9 @@
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BackButton } from "@/components/BackButton";
 import { CREDIT_PLANS, CREDIT_TOPUPS, formatCOP } from "@/lib/credits-pricing";
+import { whatsappUrl } from "@/lib/whatsapp";
 
 type Step = { n: number; title: string; body: string[] };
 
@@ -95,7 +96,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function FaqItem({ q, a }: { q: string; a: string }) {
+function FaqItem({ q, a, isLast }: { q: string; a: string; isLast: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <View style={[styles.faqItem, open ? styles.faqItemOpen : styles.faqItemClosed]}>
@@ -106,6 +107,11 @@ function FaqItem({ q, a }: { q: string; a: string }) {
       {open && (
         <View style={styles.faqAnswerBox}>
           <Text style={styles.faqAnswerText}>{a}</Text>
+          {isLast && (
+            <Pressable onPress={() => Linking.openURL(whatsappUrl())}>
+              <Text style={styles.contactLink}>Escríbenos por WhatsApp →</Text>
+            </Pressable>
+          )}
         </View>
       )}
     </View>
@@ -198,8 +204,8 @@ export default function ComoFuncionaScreen() {
         </Section>
 
         <Section title="Preguntas frecuentes">
-          {FAQS.map((item) => (
-            <FaqItem key={item.q} q={item.q} a={item.a} />
+          {FAQS.map((item, i) => (
+            <FaqItem key={item.q} q={item.q} a={item.a} isLast={i === FAQS.length - 1} />
           ))}
         </Section>
 
@@ -290,6 +296,7 @@ const styles = StyleSheet.create({
   faqIconOpen: { color: "#ff4f3f" },
   faqAnswerBox: { paddingHorizontal: 18, paddingBottom: 18 },
   faqAnswerText: { fontSize: 13, lineHeight: 20, color: "#063009b3" },
+  contactLink: { marginTop: 10, fontSize: 13, fontWeight: "700", color: "#25D366" },
   ctaBox: {
     marginTop: 28,
     backgroundColor: "#063009",
