@@ -73,6 +73,7 @@ type Gym = {
   politicaMenores: string | null;
   nivelRecomendado: string | null;
   recomendaciones: string | null;
+  bookingCutoffMinutes: number;
 };
 
 function InfoAccordion({ title, text }: { title: string; text: string | null }) {
@@ -176,11 +177,9 @@ function formatHora(fecha: string): string {
   });
 }
 
-const BOOKING_CUTOFF_MINUTES = 20;
-
-function isBookingClosed(fecha: string): boolean {
+function isBookingClosed(fecha: string, cutoffMinutes: number): boolean {
   const minutesUntilClass = (new Date(fecha).getTime() - Date.now()) / (1000 * 60);
-  return minutesUntilClass < BOOKING_CUTOFF_MINUTES;
+  return minutesUntilClass < cutoffMinutes;
 }
 
 type GymDetailResponse = { gym: Gym; classes: Clase[]; reservedClaseIds?: string[] };
@@ -189,7 +188,14 @@ type ScreenState = { loading: boolean; error: string | null; data: GymDetailResp
 
 type BookState = Record<
   string,
-  { loading: boolean; error: string | null; ok: boolean; code?: string }
+  {
+    loading: boolean;
+    error: string | null;
+    ok: boolean;
+    code?: string;
+    remainingCredits?: number;
+    dismissed?: boolean;
+  }
 >;
 
 type WaitlistState = Record<
@@ -315,13 +321,22 @@ export default function GymDetailScreen() {
     setBookState((prev) => ({ ...prev, [claseId]: { loading: true, error: null, ok: false } }));
     try {
       const token = await getToken();
-      const result = await apiFetch<{ ok: boolean; error?: string; code?: string }>(
-        `/gimnasios/${id}/reservar`,
-        token,
-        { method: "POST", body: { claseId } }
-      );
+      const result = await apiFetch<{
+        ok: boolean;
+        error?: string;
+        code?: string;
+        remainingCredits?: number;
+      }>(`/gimnasios/${id}/reservar`, token, { method: "POST", body: { claseId } });
       if (result.ok) {
-        setBookState((prev) => ({ ...prev, [claseId]: { loading: false, error: null, ok: true } }));
+        setBookState((prev) => ({
+          ...prev,
+          [claseId]: {
+            loading: false,
+            error: null,
+            ok: true,
+            remainingCredits: result.remainingCredits,
+          },
+        }));
         load();
       } else {
         setBookState((prev) => ({
@@ -435,6 +450,9 @@ export default function GymDetailScreen() {
         </View>
 
         <Text style={styles.sectionTitle}>Clases disponibles</Text>
+        <Text style={styles.limiteMensual}>
+          Puedes reservar en este gimnasio un máximo de 3 veces al mes.
+        </Text>
 
         {classes.length === 0 && (
           <Text style={styles.subtitle}>Este gimnasio todavía no tiene clases programadas.</Text>
@@ -518,20 +536,41 @@ export default function GymDetailScreen() {
                   <Text style={styles.buttonOutlineText}>Completar perfil</Text>
                 </Pressable>
               )}
-              {book?.ok && (
-                <View style={styles.confirmBox}>
-                  <View style={styles.confirmCheck}>
-                    <Text style={styles.confirmCheckIcon}>✓</Text>
+              {book?.ok && !book?.dismissed && (
+                <Modal transparent animationType="fade" visible>
+                  <View style={styles.modalOverlay}>
+                    <View style={styles.modalCard}>
+                      <View style={styles.confirmCheck}>
+                        <Text style={styles.confirmCheckIcon}>✓</Text>
+                      </View>
+                      <Text style={styles.modalTitle}>Reserva confirmada</Text>
+                      <Text style={styles.modalSubtitle}>
+                        Créditos restantes: {book.remainingCredits ?? 0}.
+                      </Text>
+                      <Pressable
+                        style={styles.modalButton}
+                        onPress={() =>
+                          setBookState((prev) => ({
+                            ...prev,
+                            [clase.id]: { ...prev[clase.id], dismissed: true },
+                          }))
+                        }
+                      >
+                        <Text style={styles.modalButtonText}>Listo</Text>
+                      </Pressable>
+                    </View>
                   </View>
-                  <Text style={styles.confirmBoxText}>Reserva confirmada.</Text>
-                </View>
+                </Modal>
+              )}
+              {book?.ok && book?.dismissed && (
+                <Text style={styles.successText}>Ya reservaste esta clase.</Text>
               )}
 
               {yaReservada ? (
                 <Text style={styles.successText}>Ya reservaste esta clase.</Text>
               ) : !clase.fecha ? (
                 <Text style={styles.mutedText}>Todavía no tiene fecha confirmada.</Text>
-              ) : !sinCupos && isBookingClosed(clase.fecha) ? (
+              ) : !sinCupos && isBookingClosed(clase.fecha, gym.bookingCutoffMinutes) ? (
                 <Text style={styles.mutedText}>Las reservas para esta clase ya cerraron.</Text>
               ) : !isLoaded ? null : !isSignedIn ? (
                 <Link href="/sign-in" asChild>
@@ -671,6 +710,7 @@ const styles = StyleSheet.create({
   titleFavoriteIcon: { fontSize: 24, color: "#ff4f3f" },
   subtitle: { fontSize: 14, color: "#06300999", marginTop: 4 },
   sectionTitle: { fontSize: 17, fontWeight: "700", color: "#063009", marginTop: 24, marginBottom: 12 },
+  limiteMensual: { fontSize: 11, color: "#06300980", marginTop: -8, marginBottom: 12 },
   diaRow: { marginBottom: 16 },
   diaRowContent: { flexDirection: "row", gap: 8 },
   diaChip: {
@@ -737,28 +777,42 @@ const styles = StyleSheet.create({
   errorText: { color: "#ff4f3f", fontSize: 13, marginTop: 8 },
   mutedText: { color: "#06300980", fontSize: 13, marginTop: 8 },
   successText: { color: "#0a8a3f", fontSize: 13, marginTop: 8, fontWeight: "700" },
-  confirmBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginTop: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(6,48,9,0.2)",
-    backgroundColor: "rgba(6,48,9,0.05)",
-  },
   confirmCheck: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: "#063009",
     alignItems: "center",
     justifyContent: "center",
   },
-  confirmCheckIcon: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  confirmBoxText: { color: "#063009", fontSize: 13, fontWeight: "700" },
+  confirmCheckIcon: { color: "#fff", fontSize: 20, fontWeight: "700" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(6,48,9,0.45)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 320,
+    borderRadius: 20,
+    backgroundColor: "#fff",
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    alignItems: "center",
+  },
+  modalTitle: { marginTop: 14, fontSize: 18, fontWeight: "800", color: "#063009" },
+  modalSubtitle: { marginTop: 4, fontSize: 14, color: "#06300999" },
+  modalButton: {
+    marginTop: 20,
+    width: "100%",
+    borderRadius: 999,
+    backgroundColor: "#ff4f3f",
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  modalButtonText: { color: "#fff", fontSize: 14, fontWeight: "700" },
   button: {
     marginTop: 12,
     backgroundColor: "#ff4f3f",
