@@ -183,7 +183,13 @@ function isBookingClosed(fecha: string, cutoffMinutes: number): boolean {
   return minutesUntilClass < cutoffMinutes;
 }
 
-type GymDetailResponse = { gym: Gym; classes: Clase[]; reservedClaseIds?: string[] };
+type GymDetailResponse = {
+  gym: Gym;
+  classes: Clase[];
+  reservedClaseIds?: string[];
+  reservasAbiertas: boolean;
+  reservasAbrenLabel: string;
+};
 
 type ScreenState = { loading: boolean; error: string | null; data: GymDetailResponse | null };
 
@@ -391,7 +397,7 @@ export default function GymDetailScreen() {
     );
   }
 
-  const { gym, classes, reservedClaseIds } = state.data;
+  const { gym, classes, reservedClaseIds, reservasAbiertas, reservasAbrenLabel } = state.data;
   const reservedSet = new Set(reservedClaseIds ?? []);
   const diaActivo = semana.find((d) => d.key === diaSeleccionado) ?? semana[0];
   const clasesDelDia = classes.filter(
@@ -573,6 +579,10 @@ export default function GymDetailScreen() {
 
               {yaReservada ? (
                 <Text style={styles.successText}>Ya reservaste esta clase.</Text>
+              ) : !reservasAbiertas ? (
+                <Text style={styles.mutedText}>
+                  Todavía estamos cargando los cupos — las reservas abren el {reservasAbrenLabel}.
+                </Text>
               ) : !clase.fecha ? (
                 <Text style={styles.mutedText}>Todavía no tiene fecha confirmada.</Text>
               ) : !sinCupos && isBookingClosed(clase.fecha, gym.bookingCutoffMinutes) ? (
