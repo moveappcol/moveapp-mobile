@@ -10,6 +10,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { apiFetch } from "@/lib/api";
@@ -219,6 +220,7 @@ export default function GymDetailScreen() {
   });
   const [bookState, setBookState] = useState<BookState>({});
   const [waitlistState, setWaitlistState] = useState<WaitlistState>({});
+  const [molestiasState, setMolestiasState] = useState<Record<string, string>>({});
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const load = useCallback(() => {
@@ -326,7 +328,10 @@ export default function GymDetailScreen() {
         error?: string;
         code?: string;
         remainingCredits?: number;
-      }>(`/gimnasios/${id}/reservar`, token, { method: "POST", body: { claseId } });
+      }>(`/gimnasios/${id}/reservar`, token, {
+        method: "POST",
+        body: { claseId, molestias: molestiasState[claseId]?.trim() || undefined },
+      });
       if (result.ok) {
         setBookState((prev) => ({
           ...prev,
@@ -621,17 +626,33 @@ export default function GymDetailScreen() {
                   );
                 })()
               ) : (
-                <Pressable
-                  disabled={book?.loading || book?.ok}
-                  onPress={() => reservar(clase.id)}
-                  style={[styles.button, book?.ok && styles.buttonDisabled]}
-                >
-                  {book?.loading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.buttonText}>{book?.ok ? "Reservado" : "Reservar"}</Text>
-                  )}
-                </Pressable>
+                <>
+                  <Text style={styles.molestiasLabel}>
+                    ¿Algún dolor o molestia que quieras que el gimnasio tenga en cuenta? (opcional)
+                  </Text>
+                  <TextInput
+                    style={styles.molestiasInput}
+                    placeholder="Ej: dolor de rodilla, embarazo, lesión reciente…"
+                    placeholderTextColor="#06300966"
+                    multiline
+                    maxLength={300}
+                    value={molestiasState[clase.id] ?? ""}
+                    onChangeText={(text) =>
+                      setMolestiasState((prev) => ({ ...prev, [clase.id]: text }))
+                    }
+                  />
+                  <Pressable
+                    disabled={book?.loading || book?.ok}
+                    onPress={() => reservar(clase.id)}
+                    style={[styles.button, book?.ok && styles.buttonDisabled]}
+                  >
+                    {book?.loading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.buttonText}>{book?.ok ? "Reservado" : "Reservar"}</Text>
+                    )}
+                  </Pressable>
+                </>
               )}
             </View>
           );
@@ -773,6 +794,19 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.3,
     marginTop: 4,
+  },
+  molestiasLabel: { fontSize: 12, color: "#06300999", marginTop: 10 },
+  molestiasInput: {
+    marginTop: 6,
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: "#06300922",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 13,
+    color: "#063009",
+    textAlignVertical: "top",
   },
   errorText: { color: "#ff4f3f", fontSize: 13, marginTop: 8 },
   mutedText: { color: "#06300980", fontSize: 13, marginTop: 8 },
