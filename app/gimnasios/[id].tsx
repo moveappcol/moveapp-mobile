@@ -416,7 +416,6 @@ export default function GymDetailScreen() {
   const clasesDelDia = classes.filter(
     (c) => c.fecha && DAY_KEY_FORMATTER.format(new Date(c.fecha)) === diaActivo.key
   );
-  const sinFecha = classes.filter((c) => !c.fecha);
   const generoLabel =
     gym.genero === "solo_mujeres"
       ? "Gimnasio exclusivo para mujeres"
@@ -683,34 +682,6 @@ export default function GymDetailScreen() {
             </View>
           );
         })}
-
-        {sinFecha.length > 0 && (
-          <>
-            <View style={styles.diaHeader}>
-              <Text style={styles.diaTitulo}>Fecha por confirmar</Text>
-            </View>
-            {sinFecha.map((clase) => {
-              const book = bookState[clase.id];
-              return (
-                <View key={clase.id} style={styles.card}>
-                  <Text style={styles.cardTitle}>{clase.name}</Text>
-                  <Text style={styles.cardSubtitle}>Hora por confirmar</Text>
-                  {clase.descripcion && (
-                    <Text style={styles.cardDescripcion}>{clase.descripcion}</Text>
-                  )}
-                  <Text style={styles.cardSubtitle}>
-                    {precioEfectivo(clase) < clase.credits && (
-                      <Text style={styles.creditsStrikethrough}>{clase.credits} </Text>
-                    )}
-                    {precioEfectivo(clase)} créditos
-                  </Text>
-                  {book?.error && <Text style={styles.errorText}>{book.error}</Text>}
-                  <Text style={styles.subtitle}>Todavía no tiene fecha confirmada.</Text>
-                </View>
-              );
-            })}
-          </>
-        )}
       </ScrollView>
 
       {viewerIndex !== null && (
