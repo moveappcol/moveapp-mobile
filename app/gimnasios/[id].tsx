@@ -122,6 +122,7 @@ type Clase = {
   cuposDisponibles: number;
   fecha: string | null;
   duracionMinutos: number;
+  descripcion: string | null;
 };
 
 function precioEfectivo(clase: Clase): number {
@@ -146,6 +147,16 @@ function pad(n: number): string {
 
 const DIAS_VISIBLES = 7;
 
+/** Los gimnasios recién están cargando las clases desde el lunes 28 de
+ * septiembre de 2026 en adelante — antes de esa fecha, la ventana normal
+ * (arrancando en "hoy") le mostraría a cualquiera que entre varios días
+ * seguidos sin ninguna clase. Mientras tanto, la ventana arranca directo en
+ * ese lunes, que sí tiene clases. Se autodesactiva sola: en cuanto llegue
+ * el 28, "hoy" ya es esa fecha o una posterior y esta rama nunca se toma —
+ * no hay que acordarse de quitarlo después. Mismo valor que web
+ * (src/lib/dias.ts) — mantener sincronizado. */
+const VENTANA_DESDE = Date.UTC(2026, 8, 28);
+
 /** Ventana rodante: "Hoy" primero, seguido de los siguientes 6 días —
  * siempre 7 días hacia adelante sin importar qué día de la semana sea hoy
  * (antes se cortaba en el domingo de esta semana, lo que escondía una
@@ -157,16 +168,18 @@ const DIAS_VISIBLES = 7;
 function semanaActual(): DiaTab[] {
   const [yStr, mStr, dStr] = DAY_KEY_FORMATTER.format(new Date()).split("-");
   const hoyUTC = Date.UTC(Number(yStr), Number(mStr) - 1, Number(dStr));
-  const diaSemanaISO = (new Date(hoyUTC).getUTCDay() + 6) % 7; // lunes=0 ... domingo=6
+  const baseUTC = hoyUTC < VENTANA_DESDE ? VENTANA_DESDE : hoyUTC;
+  const diaSemanaISO = (new Date(baseUTC).getUTCDay() + 6) % 7; // lunes=0 ... domingo=6
 
   return Array.from({ length: DIAS_VISIBLES }, (_, i) => {
-    const fecha = new Date(hoyUTC + i * 86_400_000);
+    const fecha = new Date(baseUTC + i * 86_400_000);
     const y = fecha.getUTCFullYear();
     const m = fecha.getUTCMonth() + 1;
     const d = fecha.getUTCDate();
     const key = `${y}-${pad(m)}-${pad(d)}`;
     const nombre = NOMBRES_DIA[(diaSemanaISO + i) % 7];
-    return { key, label: i === 0 ? "Hoy" : nombre, fechaLabel: `${d} de ${NOMBRES_MES[m - 1]}` };
+    const esHoyReal = baseUTC === hoyUTC && i === 0;
+    return { key, label: esHoyReal ? "Hoy" : nombre, fechaLabel: `${d} de ${NOMBRES_MES[m - 1]}` };
   });
 }
 
@@ -524,6 +537,9 @@ export default function GymDetailScreen() {
               <Text style={styles.cardSubtitle}>
                 {clase.fecha ? formatHora(clase.fecha) : "Hora por confirmar"}
               </Text>
+              {clase.descripcion && (
+                <Text style={styles.cardDescripcion}>{clase.descripcion}</Text>
+              )}
               <Text style={styles.cardSubtitle}>
                 {precioEfectivo(clase) < clase.credits && (
                   <Text style={styles.creditsStrikethrough}>{clase.credits} </Text>
@@ -679,6 +695,9 @@ export default function GymDetailScreen() {
                 <View key={clase.id} style={styles.card}>
                   <Text style={styles.cardTitle}>{clase.name}</Text>
                   <Text style={styles.cardSubtitle}>Hora por confirmar</Text>
+                  {clase.descripcion && (
+                    <Text style={styles.cardDescripcion}>{clase.descripcion}</Text>
+                  )}
                   <Text style={styles.cardSubtitle}>
                     {precioEfectivo(clase) < clase.credits && (
                       <Text style={styles.creditsStrikethrough}>{clase.credits} </Text>
@@ -796,6 +815,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 15, fontWeight: "700", color: "#063009" },
   cardSubtitle: { fontSize: 13, color: "#06300999", marginTop: 4 },
+  cardDescripcion: { fontSize: 13, color: "#063009b3", marginTop: 4 },
   creditsStrikethrough: { textDecorationLine: "line-through", color: "#06300966" },
   cuposAviso: {
     fontSize: 12,
