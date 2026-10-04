@@ -46,8 +46,19 @@ export default function PlanesScreen() {
               <Text style={styles.buttonText}>Suscribirme</Text>
             </Pressable>
           </Link>
+          <Link href={`/regalar/${plan.id}`} asChild>
+            <Pressable style={styles.giftLink}>
+              <Text style={styles.giftLinkText}>Regalar este plan 🎁</Text>
+            </Pressable>
+          </Link>
         </View>
       ))}
+
+      <Link href="/canjear" asChild>
+        <Pressable style={styles.canjearLink}>
+          <Text style={styles.canjearLinkText}>¿Te regalaron un plan? Canjéalo aquí →</Text>
+        </Pressable>
+      </Link>
 
       {hasActivePlan && (
         <View style={styles.topupsSection}>
@@ -108,6 +119,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  giftLink: { marginTop: 10, alignItems: "center" },
+  giftLinkText: { color: "#ffffffb3", fontSize: 12.5, fontWeight: "700" },
+  canjearLink: {
+    marginTop: 4,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#06300922",
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  canjearLinkText: { fontSize: 13, fontWeight: "700", color: "#063009" },
   topupsSection: { marginTop: 12 },
   topupsTitle: { fontSize: 18, fontWeight: "700", color: "#063009" },
   topupsList: { marginTop: 16, gap: 10 },
