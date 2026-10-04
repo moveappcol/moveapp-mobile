@@ -20,6 +20,25 @@ import { tokenizeCard } from "@/lib/wompi";
 type Config = { wompiPublicKey: string; permalinkAcceptance: string; permalinkPersonalAuth: string };
 type SubscribeResult = { ok: true; credits: number } | { ok: false; error: string; pending?: boolean };
 
+type CouponPreview =
+  | { ok: true; tipo: "Créditos gratis"; creditos: number }
+  | { ok: true; tipo: "Descuento"; descuentoPorcentaje: number; fechaInicio?: string }
+  | { ok: false; error: string };
+
+type CouponState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "invalid"; error: string }
+  | { status: "valid-descuento"; descuentoPorcentaje: number };
+
+type ValidacionCodigoReferido = { ok: true; esInfluencer: boolean } | { ok: false; error: string };
+
+type ReferidoState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "invalid"; error: string }
+  | { status: "valid"; esInfluencer: boolean };
+
 export default function PlanCheckoutScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -42,6 +61,11 @@ export default function PlanCheckoutScreen() {
   const [pending, setPending] = useState(false);
   const [success, setSuccess] = useState<number | null>(null);
 
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState<CouponState>({ status: "idle" });
+  const [codigoReferidoInput, setCodigoReferidoInput] = useState("");
+  const [referido, setReferido] = useState<ReferidoState>({ status: "idle" });
+
   useEffect(() => {
     apiFetch<Config>("/config")
       .then(setConfig)
@@ -63,6 +87,51 @@ export default function PlanCheckoutScreen() {
     );
   }
 
+  async function handleValidarCupon() {
+    if (!couponInput.trim()) return;
+    setCoupon({ status: "loading" });
+    try {
+      const token = await getToken();
+      const result = await apiFetch<CouponPreview>("/cupon/validar", token, {
+        method: "POST",
+        body: { code: couponInput.trim() },
+      });
+      if (!result.ok) {
+        setCoupon({ status: "invalid", error: result.error });
+      } else if (result.tipo === "Créditos gratis") {
+        setCoupon({ status: "invalid", error: "Ese cupón no aplica a este pago." });
+      } else {
+        setCoupon({ status: "valid-descuento", descuentoPorcentaje: result.descuentoPorcentaje });
+      }
+    } catch {
+      setCoupon({ status: "invalid", error: "No pudimos validar el cupón." });
+    }
+  }
+
+  async function handleValidarReferido() {
+    if (!codigoReferidoInput.trim()) return;
+    setReferido({ status: "loading" });
+    try {
+      const token = await getToken();
+      const result = await apiFetch<ValidacionCodigoReferido>("/codigo-referido/validar", token, {
+        method: "POST",
+        body: { code: codigoReferidoInput.trim() },
+      });
+      if (!result.ok) {
+        setReferido({ status: "invalid", error: result.error });
+      } else {
+        setReferido({ status: "valid", esInfluencer: result.esInfluencer });
+      }
+    } catch {
+      setReferido({ status: "invalid", error: "No pudimos validar el código." });
+    }
+  }
+
+  const discountedPrice =
+    coupon.status === "valid-descuento"
+      ? Math.round(plan!.price * (1 - coupon.descuentoPorcentaje / 100))
+      : null;
+
   async function handleSubmit() {
     setError(null);
     if (!accepted) {
@@ -71,6 +140,12 @@ export default function PlanCheckoutScreen() {
     }
     if (!config) {
       setError("La pasarela de pagos todavía no está lista, intenta de nuevo.");
+      return;
+    }
+    // Si escribió un código pero nunca lo validó (o quedó inválido), se
+    // frena acá antes de cobrar — mismo criterio que el checkout web.
+    if (codigoReferidoInput.trim() && referido.status !== "valid") {
+      setError("Valida el código de referido antes de pagar, o bórralo si no tienes uno.");
       return;
     }
 
@@ -88,7 +163,12 @@ export default function PlanCheckoutScreen() {
       const token = await getToken();
       const result = await apiFetch<SubscribeResult>("/suscripcion/comprar", token, {
         method: "POST",
-        body: { planId: plan!.id, cardToken },
+        body: {
+          planId: plan!.id,
+          cardToken,
+          couponCode: coupon.status === "valid-descuento" ? couponInput.trim() : undefined,
+          codigoReferido: referido.status === "valid" ? codigoReferidoInput.trim() : undefined,
+        },
       });
 
       if (result.ok) {
@@ -111,7 +191,14 @@ export default function PlanCheckoutScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>{plan.name}</Text>
         <Text style={styles.subtitle}>{plan.label}</Text>
-        <Text style={styles.price}>{formatCOP(plan.price)}/mes</Text>
+        {discountedPrice !== null ? (
+          <View style={styles.priceRow}>
+            <Text style={styles.priceStrikethrough}>{formatCOP(plan.price)}</Text>
+            <Text style={styles.price}>{formatCOP(discountedPrice)}/mes</Text>
+          </View>
+        ) : (
+          <Text style={styles.price}>{formatCOP(plan.price)}/mes</Text>
+        )}
 
         {!isLoaded ? (
           <ActivityIndicator style={{ marginTop: 24 }} />
@@ -188,6 +275,68 @@ export default function PlanCheckoutScreen() {
               </View>
             </View>
 
+            <Text style={styles.label}>¿Tienes un cupón? (opcional)</Text>
+            <View style={styles.codeRow}>
+              <TextInput
+                style={[styles.input, styles.codeInput]}
+                placeholder="Código de cupón"
+                placeholderTextColor="#06300966"
+                autoCapitalize="characters"
+                value={couponInput}
+                onChangeText={(text) => {
+                  setCouponInput(text);
+                  setCoupon({ status: "idle" });
+                }}
+              />
+              <Pressable
+                style={styles.codeButton}
+                disabled={coupon.status === "loading" || !couponInput.trim()}
+                onPress={handleValidarCupon}
+              >
+                <Text style={styles.codeButtonText}>
+                  {coupon.status === "loading" ? "..." : "Validar"}
+                </Text>
+              </Pressable>
+            </View>
+            {coupon.status === "invalid" && <Text style={styles.errorText}>{coupon.error}</Text>}
+            {coupon.status === "valid-descuento" && (
+              <Text style={styles.successTextSmall}>
+                Cupón aplicado — {coupon.descuentoPorcentaje}% de descuento ✓
+              </Text>
+            )}
+
+            <Text style={styles.label}>¿Alguien te refirió? (opcional)</Text>
+            <View style={styles.codeRow}>
+              <TextInput
+                style={[styles.input, styles.codeInput]}
+                placeholder="Código de referido"
+                placeholderTextColor="#06300966"
+                autoCapitalize="characters"
+                value={codigoReferidoInput}
+                onChangeText={(text) => {
+                  setCodigoReferidoInput(text);
+                  setReferido({ status: "idle" });
+                }}
+              />
+              <Pressable
+                style={styles.codeButton}
+                disabled={referido.status === "loading" || !codigoReferidoInput.trim()}
+                onPress={handleValidarReferido}
+              >
+                <Text style={styles.codeButtonText}>
+                  {referido.status === "loading" ? "..." : "Validar"}
+                </Text>
+              </Pressable>
+            </View>
+            {referido.status === "invalid" && <Text style={styles.errorText}>{referido.error}</Text>}
+            {referido.status === "valid" && (
+              <Text style={styles.successTextSmall}>
+                {referido.esInfluencer
+                  ? "Código válido — tú y quien te refirió ganan 5 créditos cada uno ✓"
+                  : "Código válido ✓"}
+              </Text>
+            )}
+
             <View style={styles.acceptRow}>
               <Switch value={accepted} onValueChange={setAccepted} />
               <Text style={styles.acceptText}>
@@ -223,7 +372,9 @@ export default function PlanCheckoutScreen() {
               {submitting ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.buttonText}>Suscribirme — {formatCOP(plan.price)}</Text>
+                <Text style={styles.buttonText}>
+                  Suscribirme — {formatCOP(discountedPrice ?? plan.price)}
+                </Text>
               )}
             </Pressable>
           </View>
@@ -239,6 +390,21 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: "800", color: "#063009" },
   subtitle: { fontSize: 14, color: "#06300999", marginTop: 4 },
   price: { fontSize: 20, fontWeight: "800", color: "#ff4f3f", marginTop: 8 },
+  priceRow: { flexDirection: "row", alignItems: "baseline", gap: 8, marginTop: 8 },
+  priceStrikethrough: { fontSize: 14, color: "#06300966", textDecorationLine: "line-through" },
+  codeRow: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
+  codeInput: { flex: 1, marginBottom: 0 },
+  codeButton: {
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: "#06300933",
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+  },
+  codeButtonText: { fontSize: 13, fontWeight: "700", color: "#063009" },
+  successTextSmall: { color: "#0a8a3f", fontSize: 12.5, fontWeight: "600", marginTop: 6 },
   guestBox: { marginTop: 24 },
   form: { marginTop: 24, gap: 4 },
   label: { fontSize: 13, fontWeight: "600", color: "#063009", marginTop: 12 },
