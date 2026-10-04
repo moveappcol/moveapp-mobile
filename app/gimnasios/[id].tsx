@@ -460,18 +460,6 @@ export default function GymDetailScreen() {
           </View>
         )}
 
-        <View style={styles.accordionList}>
-          <InfoAccordion title="Descripción" text={gym.description} />
-          <InfoAccordion title="Puntualidad" text={gym.puntualidad} />
-          <InfoAccordion title="Política de cancelación" text={gym.politicaCancelacion} />
-          <InfoAccordion title="Ropa / calzado" text={gym.ropaCalzado} />
-          <InfoAccordion title="Materiales" text={gym.materiales} />
-          <ServiciosAccordion servicios={gym.servicios} />
-          <InfoAccordion title="Política para menores de edad" text={gym.politicaMenores} />
-          <InfoAccordion title="Nivel recomendado" text={gym.nivelRecomendado} />
-          <InfoAccordion title="Recomendaciones" text={gym.recomendaciones} />
-        </View>
-
         <Text style={styles.sectionTitle}>Clases disponibles</Text>
         <Text style={styles.limiteMensual}>
           Puedes reservar en este gimnasio un máximo de 3 veces al mes.
@@ -682,6 +670,18 @@ export default function GymDetailScreen() {
             </View>
           );
         })}
+
+        <View style={styles.accordionList}>
+          <InfoAccordion title="Descripción" text={gym.description} />
+          <InfoAccordion title="Puntualidad" text={gym.puntualidad} />
+          <InfoAccordion title="Política de cancelación" text={gym.politicaCancelacion} />
+          <InfoAccordion title="Ropa / calzado" text={gym.ropaCalzado} />
+          <InfoAccordion title="Materiales" text={gym.materiales} />
+          <ServiciosAccordion servicios={gym.servicios} />
+          <InfoAccordion title="Política para menores de edad" text={gym.politicaMenores} />
+          <InfoAccordion title="Nivel recomendado" text={gym.nivelRecomendado} />
+          <InfoAccordion title="Recomendaciones" text={gym.recomendaciones} />
+        </View>
       </ScrollView>
 
       {viewerIndex !== null && (

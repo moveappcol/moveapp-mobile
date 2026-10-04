@@ -1,6 +1,7 @@
 import { useAuth } from "@clerk/expo";
-import { Tabs } from "expo-router";
+import { Link, Tabs } from "expo-router";
 import { useEffect } from "react";
+import { Pressable, Text } from "react-native";
 import { TabIcon } from "@/components/TabIcon";
 import { apiFetch } from "@/lib/api";
 import { setCached } from "@/lib/cache";
@@ -77,6 +78,18 @@ export default function TabsLayout() {
         options={{
           title: "Gimnasios",
           tabBarIcon: ({ color }) => <TabIcon name="gimnasios" color={color} />,
+          // Acceso directo a "Cómo funciona" desde la primera pantalla que ve
+          // cualquiera — antes esa pantalla existía pero solo se llegaba por
+          // un link suelto dentro de "Nosotros", así que casi nadie la veía.
+          headerRight: () => (
+            <Link href="/como-funciona" asChild>
+              <Pressable hitSlop={10} style={{ marginRight: 16 }}>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#063009" }}>
+                  ¿Cómo funciona?
+                </Text>
+              </Pressable>
+            </Link>
+          ),
         }}
       />
       <Tabs.Screen
