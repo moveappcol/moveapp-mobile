@@ -15,6 +15,7 @@ import { getCached, setCached } from "@/lib/cache";
 import { distanceKm } from "@/lib/geo";
 import { Skeleton } from "@/components/Skeleton";
 import { useFavorites } from "@/lib/favorites";
+import ClassesByDayExplorer from "@/components/ClassesByDayExplorer";
 
 const CACHE_KEY = "gyms";
 
@@ -80,6 +81,7 @@ export default function GimnasiosScreen() {
   const [geoStatus, setGeoStatus] = useState<GeoStatus>("idle");
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const { isFavorite, toggleFavorite } = useFavorites();
+  const [modo, setModo] = useState<"gimnasio" | "dia">("gimnasio");
 
   useEffect(() => {
     apiFetch<GymsResponse>("/gyms")
@@ -190,12 +192,39 @@ export default function GimnasiosScreen() {
     );
   }
 
-  const listHeader = (
+  const topHeader = (
     <>
       <Text style={styles.wordmark}>UNIQUE</Text>
       <Text style={styles.title}>Gimnasios afiliados</Text>
-      <Text style={styles.subtitle}>Busca gimnasios cerca de ti y filtra por actividad</Text>
+      <Text style={styles.subtitle}>
+        {modo === "gimnasio"
+          ? "Busca gimnasios cerca de ti y filtra por actividad"
+          : "Mira qué clases hay cada día en toda la red"}
+      </Text>
 
+      <View style={styles.modeToggle}>
+        <Pressable
+          onPress={() => setModo("gimnasio")}
+          style={[styles.modeButton, modo === "gimnasio" && styles.modeButtonActive]}
+        >
+          <Text style={[styles.modeButtonText, modo === "gimnasio" && styles.modeButtonTextActive]}>
+            Por gimnasio
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setModo("dia")}
+          style={[styles.modeButton, modo === "dia" && styles.modeButtonActive]}
+        >
+          <Text style={[styles.modeButtonText, modo === "dia" && styles.modeButtonTextActive]}>
+            Por día
+          </Text>
+        </Pressable>
+      </View>
+    </>
+  );
+
+  const gymFilters = (
+    <>
       <View style={styles.searchBar}>
         <SearchIcon />
         <TextInput
@@ -272,9 +301,19 @@ export default function GimnasiosScreen() {
     </>
   );
 
+  if (modo === "dia") {
+    return (
+      <ScrollView contentContainerStyle={styles.container}>
+        {topHeader}
+        <ClassesByDayExplorer />
+      </ScrollView>
+    );
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      {listHeader}
+      {topHeader}
+      {gymFilters}
 
       <View style={styles.list}>
         {results.map((gym) => {
@@ -341,6 +380,19 @@ const styles = StyleSheet.create({
   wordmark: { fontSize: 15, fontWeight: "700", color: "#063009" },
   title: { fontSize: 20, fontWeight: "800", color: "#063009", marginTop: 10 },
   subtitle: { fontSize: 13, color: "#06300999", marginTop: 4 },
+  modeToggle: {
+    flexDirection: "row",
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: "#06300922",
+    borderRadius: 999,
+    padding: 3,
+    marginTop: 14,
+  },
+  modeButton: { borderRadius: 999, paddingVertical: 7, paddingHorizontal: 16 },
+  modeButtonActive: { backgroundColor: "#063009" },
+  modeButtonText: { fontSize: 12, fontWeight: "700", color: "#06300999" },
+  modeButtonTextActive: { color: "#fff" },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
