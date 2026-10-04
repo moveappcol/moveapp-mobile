@@ -16,6 +16,7 @@ import { distanceKm } from "@/lib/geo";
 import { Skeleton } from "@/components/Skeleton";
 import { useFavorites } from "@/lib/favorites";
 import ClassesByDayExplorer from "@/components/ClassesByDayExplorer";
+import { esGimnasioDeExperiencias } from "@/lib/gyms";
 
 const CACHE_KEY = "gyms";
 
@@ -124,6 +125,7 @@ export default function GimnasiosScreen() {
   }
 
   const gyms = state.data?.gyms ?? [];
+  const experienciasGym = gyms.find((g) => esGimnasioDeExperiencias(g.name));
 
   const activityOptions = useMemo(
     () => Array.from(new Set(gyms.flatMap((g) => g.activities))).sort(),
@@ -220,6 +222,14 @@ export default function GimnasiosScreen() {
           </Text>
         </Pressable>
       </View>
+
+      {experienciasGym && (
+        <Link href={`/gimnasios/${experienciasGym.id}`} asChild>
+          <Pressable style={styles.experienciasBanner}>
+            <Text style={styles.experienciasBannerText}>✨ Ver Experiencias UNIQUE</Text>
+          </Pressable>
+        </Link>
+      )}
     </>
   );
 
@@ -323,10 +333,14 @@ export default function GimnasiosScreen() {
               : gym.genero === "solo_hombres"
                 ? "Gimnasio exclusivo para hombres"
                 : null;
+          const esExperiencia = esGimnasioDeExperiencias(gym.name);
           return (
             <Link key={gym.id} href={`/gimnasios/${gym.id}`} asChild>
-              <Pressable style={styles.card} onPressIn={() => prefetchGym(gym.id)}>
-                <View style={styles.photoWrap}>
+              <Pressable
+                style={[styles.card, esExperiencia && styles.cardExperiencia]}
+                onPressIn={() => prefetchGym(gym.id)}
+              >
+                <View style={[styles.photoWrap, esExperiencia && styles.photoWrapExperiencia]}>
                   {gym.photoUrl ? (
                     <Image source={{ uri: gym.photoUrl }} style={styles.photo} />
                   ) : (
@@ -479,6 +493,16 @@ const styles = StyleSheet.create({
   locationBoxText: { fontSize: 12, fontWeight: "700", color: "#063009" },
   list: { marginTop: 20, gap: 14 },
   card: { borderWidth: 1, borderColor: "#06300922", borderRadius: 18, overflow: "hidden" },
+  cardExperiencia: { borderColor: "#ff4f3f66", backgroundColor: "#ff4f3f0d" },
+  photoWrapExperiencia: { backgroundColor: "#ff4f3f1a" },
+  experienciasBanner: {
+    marginTop: 14,
+    backgroundColor: "#ff4f3f",
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  experienciasBannerText: { color: "#fff", fontSize: 13, fontWeight: "700" },
   photoWrap: {
     width: "100%",
     aspectRatio: 16 / 9,

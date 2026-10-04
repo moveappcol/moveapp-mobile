@@ -20,7 +20,8 @@ import { Skeleton } from "@/components/Skeleton";
 import { useFavorites } from "@/lib/favorites";
 import { GymLocationCard } from "@/components/GymLocationCard";
 import { precioEfectivo, type Clase } from "@/lib/classes";
-import { DAY_KEY_FORMATTER, semanaActual, formatHora } from "@/lib/dias";
+import { DAY_KEY_FORMATTER, semanaActual, formatHora, formatFechaLarga } from "@/lib/dias";
+import { esGimnasioDeExperiencias } from "@/lib/gyms";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
@@ -336,10 +337,15 @@ export default function GymDetailScreen() {
 
   const { gym, classes, reservedClaseIds, reservasAbiertas, reservasAbrenLabel } = state.data;
   const reservedSet = new Set(reservedClaseIds ?? []);
+  const modoPlano = esGimnasioDeExperiencias(gym.name);
   const diaActivo = semana.find((d) => d.key === diaSeleccionado) ?? semana[0];
-  const clasesDelDia = classes.filter(
-    (c) => c.fecha && DAY_KEY_FORMATTER.format(new Date(c.fecha)) === diaActivo.key
-  );
+  const clasesDelDia = modoPlano
+    ? classes
+        .filter((c) => c.fecha && new Date(c.fecha).getTime() > Date.now())
+        .sort((a, b) => (a.fecha as string).localeCompare(b.fecha as string))
+    : classes.filter(
+        (c) => c.fecha && DAY_KEY_FORMATTER.format(new Date(c.fecha)) === diaActivo.key
+      );
   const generoLabel =
     gym.genero === "solo_mujeres"
       ? "Gimnasio exclusivo para mujeres"
@@ -393,7 +399,7 @@ export default function GymDetailScreen() {
           <Text style={styles.subtitle}>Este gimnasio todavía no tiene clases programadas.</Text>
         )}
 
-        {classes.length > 0 && (
+        {classes.length > 0 && !modoPlano && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -427,7 +433,7 @@ export default function GymDetailScreen() {
           </ScrollView>
         )}
 
-        {classes.length > 0 && (
+        {classes.length > 0 && !modoPlano && (
           <View style={styles.diaHeader}>
             <Text style={styles.diaTitulo}>{diaActivo.label}</Text>
             <Text style={styles.diaFecha}>{diaActivo.fechaLabel}</Text>
@@ -435,7 +441,9 @@ export default function GymDetailScreen() {
         )}
 
         {classes.length > 0 && clasesDelDia.length === 0 && (
-          <Text style={styles.subtitle}>No hay clases programadas para este día.</Text>
+          <Text style={styles.subtitle}>
+            {modoPlano ? "No hay próximas experiencias programadas." : "No hay clases programadas para este día."}
+          </Text>
         )}
 
         {clasesDelDia.map((clase) => {
@@ -446,7 +454,11 @@ export default function GymDetailScreen() {
             <View key={clase.id} style={styles.card}>
               <Text style={styles.cardTitle}>{clase.name}</Text>
               <Text style={styles.cardSubtitle}>
-                {clase.fecha ? formatHora(clase.fecha) : "Hora por confirmar"}
+                {clase.fecha
+                  ? modoPlano
+                    ? `${formatFechaLarga(clase.fecha)} · ${formatHora(clase.fecha)}`
+                    : formatHora(clase.fecha)
+                  : "Hora por confirmar"}
               </Text>
               {clase.descripcion && (
                 <Text style={styles.cardDescripcion}>{clase.descripcion}</Text>

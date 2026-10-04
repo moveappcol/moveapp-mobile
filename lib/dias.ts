@@ -57,3 +57,16 @@ export function formatHora(fecha: string): string {
     minute: "2-digit",
   });
 }
+
+/** Fecha completa con día de la semana (ej. "sábado 18 de octubre") — para
+ * listas que no viven dentro de una ventana de 7 días (ver "modo plano" del
+ * gimnasio de Experiencias), donde no alcanza con mostrar solo la hora
+ * porque no hay un día de referencia implícito. */
+export function formatFechaLarga(fecha: string): string {
+  return new Date(fecha).toLocaleDateString("es-CO", {
+    timeZone: "America/Bogota",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
