@@ -77,6 +77,7 @@ type Gym = {
   politicaMenores: string | null;
   nivelRecomendado: string | null;
   recomendaciones: string | null;
+  parqueaderosCercanos: string | null;
   bookingCutoffMinutes: number;
 };
 
@@ -613,6 +614,7 @@ export default function GymDetailScreen() {
           <InfoAccordion title="Política de cancelación" text={gym.politicaCancelacion} />
           <InfoAccordion title="Ropa / calzado" text={gym.ropaCalzado} />
           <InfoAccordion title="Materiales" text={gym.materiales} />
+          <InfoAccordion title="Parqueaderos cercanos" text={gym.parqueaderosCercanos} />
           <ServiciosAccordion servicios={gym.servicios} />
           <InfoAccordion title="Política para menores de edad" text={gym.politicaMenores} />
           <InfoAccordion title="Nivel recomendado" text={gym.nivelRecomendado} />
