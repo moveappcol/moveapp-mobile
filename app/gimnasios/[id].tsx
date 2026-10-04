@@ -122,9 +122,18 @@ function isBookingClosed(fecha: string, cutoffMinutes: number): boolean {
   return minutesUntilClass < cutoffMinutes;
 }
 
+type Parqueadero = {
+  id: string;
+  nombre: string;
+  lat: number;
+  lng: number;
+  precio: string | null;
+};
+
 type GymDetailResponse = {
   gym: Gym;
   classes: Clase[];
+  parqueaderos: Parqueadero[];
   reservedClaseIds?: string[];
   reservasAbiertas: boolean;
   reservasAbrenLabel: string;
@@ -336,7 +345,7 @@ export default function GymDetailScreen() {
     );
   }
 
-  const { gym, classes, reservedClaseIds, reservasAbiertas, reservasAbrenLabel } = state.data;
+  const { gym, classes, parqueaderos, reservedClaseIds, reservasAbiertas, reservasAbrenLabel } = state.data;
   const reservedSet = new Set(reservedClaseIds ?? []);
   const modoPlano = esGimnasioDeExperiencias(gym.name);
   const diaActivo = semana.find((d) => d.key === diaSeleccionado) ?? semana[0];
@@ -387,7 +396,7 @@ export default function GymDetailScreen() {
 
         {gym.lat !== null && gym.lng !== null && (
           <View style={styles.locationCardWrap}>
-            <GymLocationCard lat={gym.lat} lng={gym.lng} name={gym.name} />
+            <GymLocationCard lat={gym.lat} lng={gym.lng} name={gym.name} parqueaderos={parqueaderos} />
           </View>
         )}
 
