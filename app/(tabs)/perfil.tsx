@@ -1,7 +1,7 @@
 import { useAuth, useUser } from "@clerk/expo";
 import { Link } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
 import { CREDIT_PLANS } from "@/lib/credits-pricing";
@@ -20,11 +20,13 @@ type PlanResponse =
       proximoCobro: string | null;
       planSiguiente: PlanInfo | null;
     };
+type CodigoReferidoResponse = { codigo: string | null; esInfluencer: boolean; creditosPorReferido: number };
 type ScreenState = {
   loading: boolean;
   error: string | null;
   credits: CreditsResponse | null;
   plan: PlanResponse | null;
+  codigoReferido: CodigoReferidoResponse | null;
 };
 
 function GuestView() {
@@ -58,12 +60,17 @@ function GuestView() {
 function SignedInView() {
   const { getToken, signOut } = useAuth();
   const { user } = useUser();
-  const cached = getCached<{ credits: CreditsResponse; plan: PlanResponse }>(CACHE_KEY);
+  const cached = getCached<{
+    credits: CreditsResponse;
+    plan: PlanResponse;
+    codigoReferido?: CodigoReferidoResponse;
+  }>(CACHE_KEY);
   const [state, setState] = useState<ScreenState>({
     loading: !cached,
     error: null,
     credits: cached?.credits ?? null,
     plan: cached?.plan ?? null,
+    codigoReferido: cached?.codigoReferido ?? null,
   });
 
   const [cancelling, setCancelling] = useState(false);
@@ -76,17 +83,24 @@ function SignedInView() {
   const load = useCallback(async () => {
     try {
       const token = await getToken();
-      const [credits, plan] = await Promise.all([
+      const [credits, plan, codigoReferido] = await Promise.all([
         apiFetch<CreditsResponse>("/me/credits", token),
         apiFetch<PlanResponse>("/me/plan", token),
+        apiFetch<CodigoReferidoResponse>("/me/codigo-referido", token).catch(() => null),
       ]);
-      setCached(CACHE_KEY, { credits, plan });
-      setState({ loading: false, error: null, credits, plan });
+      setCached(CACHE_KEY, { credits, plan, codigoReferido });
+      setState({ loading: false, error: null, credits, plan, codigoReferido });
     } catch {
       setState((prev) =>
         prev.credits
           ? { ...prev, loading: false }
-          : { loading: false, error: "No pudimos cargar tu cuenta.", credits: null, plan: null }
+          : {
+              loading: false,
+              error: "No pudimos cargar tu cuenta.",
+              credits: null,
+              plan: null,
+              codigoReferido: null,
+            }
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -157,6 +171,13 @@ function SignedInView() {
       );
       setDeletingAccount(false);
     }
+  }
+
+  function compartirCodigo(codigo: string, esInfluencer: boolean, creditos: number) {
+    const mensaje = esInfluencer
+      ? `Usa mi código ${codigo} al pagar tu primer plan en UNIQUE y ambos ganamos ${creditos} créditos 🎁`
+      : `Usa mi código ${codigo} al pagar tu primer plan en UNIQUE y me gano ${creditos} créditos 🎁`;
+    Share.share({ message: mensaje }).catch(() => {});
   }
 
   function confirmChangePlan(currentPlanId: string | undefined) {
@@ -255,6 +276,30 @@ function SignedInView() {
           ) : (
             <Text style={styles.planMeta}>Todavía no tienes un plan activo.</Text>
           )}
+        </View>
+      )}
+
+      {state.codigoReferido?.codigo && (
+        <View style={styles.referralCard}>
+          <Text style={styles.referralTitle}>Refiere y gana créditos 🎁</Text>
+          <Text style={styles.referralBody}>
+            {state.codigoReferido.esInfluencer
+              ? `Comparte tu código — cuando alguien pague su primer plan con él, ambos ganan ${state.codigoReferido.creditosPorReferido} créditos.`
+              : `Comparte tu código — cuando un amigo pague su primer plan, te llegan ${state.codigoReferido.creditosPorReferido} créditos (necesitas tener un plan activo en ese momento).`}
+          </Text>
+          <Text style={styles.referralCode}>{state.codigoReferido.codigo}</Text>
+          <Pressable
+            style={styles.referralShareButton}
+            onPress={() =>
+              compartirCodigo(
+                state.codigoReferido!.codigo!,
+                state.codigoReferido!.esInfluencer,
+                state.codigoReferido!.creditosPorReferido
+              )
+            }
+          >
+            <Text style={styles.referralShareText}>Compartir código</Text>
+          </Pressable>
         </View>
       )}
 
@@ -369,6 +414,32 @@ const styles = StyleSheet.create({
   },
   cancelPlanText: { color: "#ff4f3f", fontSize: 13, fontWeight: "700" },
   cancelPlanError: { color: "#ff4f3f", fontSize: 12, marginTop: 8 },
+  referralCard: {
+    marginTop: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#ff4f3f4d",
+    backgroundColor: "#ff4f3f0d",
+    padding: 20,
+  },
+  referralTitle: { fontSize: 15, fontWeight: "700", color: "#063009" },
+  referralBody: { fontSize: 12.5, color: "#06300999", marginTop: 6, lineHeight: 18 },
+  referralCode: {
+    marginTop: 12,
+    fontSize: 24,
+    fontWeight: "800",
+    letterSpacing: 2,
+    color: "#ff4f3f",
+  },
+  referralShareButton: {
+    marginTop: 12,
+    alignSelf: "flex-start",
+    backgroundColor: "#ff4f3f",
+    borderRadius: 999,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+  },
+  referralShareText: { color: "#fff", fontSize: 13, fontWeight: "700" },
   button: {
     backgroundColor: "#ff4f3f",
     borderRadius: 999,
