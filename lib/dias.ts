@@ -70,3 +70,44 @@ export function formatFechaLarga(fecha: string): string {
     month: "long",
   });
 }
+
+const BOGOTA_HOUR_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/Bogota",
+  hour: "numeric",
+  hour12: false,
+});
+
+/** Hora del día (0–23) de una fecha, en hora de Bogotá — para agrupar
+ * clases en rangos horarios (5–7, 7–10, etc.) sin depender de la zona
+ * horaria del teléfono. Mismo criterio que web (src/lib/dias.ts). */
+export function bogotaHour(fecha: string): number {
+  return Number(BOGOTA_HOUR_FORMATTER.format(new Date(fecha)));
+}
+
+export type RangoHorario = { key: string; startHour: number; endHour: number };
+
+/** Rangos fijos para el filtro de horario del explorador "por día" — mismo
+ * criterio que web: cubren de 5 a.m. a 10 p.m., la ventana real en que los
+ * gimnasios afiliados programan clases. */
+export const RANGOS_HORARIO: RangoHorario[] = [
+  { key: "5-7", startHour: 5, endHour: 7 },
+  { key: "7-10", startHour: 7, endHour: 10 },
+  { key: "10-13", startHour: 10, endHour: 13 },
+  { key: "13-16", startHour: 13, endHour: 16 },
+  { key: "16-19", startHour: 16, endHour: 19 },
+  { key: "19-22", startHour: 19, endHour: 22 },
+];
+
+/** Bogotá no tiene horario de verano (siempre UTC-5), así que basta con
+ * construir la hora directamente en UTC+5 para representar esa hora
+ * "de reloj" en Bogotá, sin pasar por el huso horario del teléfono. */
+function formatHourLabel(hour: number): string {
+  const d = new Date(Date.UTC(2000, 0, 1, hour + 5, 0));
+  return d
+    .toLocaleTimeString("es-CO", { timeZone: "America/Bogota", hour: "numeric" })
+    .replace(/\s?[ap]\.?\s?m\.?/i, (m) => m.trim().toLowerCase());
+}
+
+export function formatRangoHorario(rango: RangoHorario): string {
+  return `${formatHourLabel(rango.startHour)} – ${formatHourLabel(rango.endHour)}`;
+}

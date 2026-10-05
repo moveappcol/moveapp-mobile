@@ -1,11 +1,16 @@
 import { useAuth } from "@clerk/expo";
 import { Link } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
 
 const CACHE_KEY = "reservas";
+
+/** Mismo umbral que CANCELLATION_WINDOW_HOURS en el backend (lib/reservations.ts
+ * de la web) — acá solo se usa para decidir qué advertencia mostrar antes de
+ * cancelar; quien de verdad decide si se devuelven créditos es el backend. */
+const CANCELLATION_WINDOW_HOURS = 24;
 
 type Clase = { id: string; name: string; fecha: string | null; duracionMinutos: number };
 type Gym = { id: string; name: string };
@@ -150,6 +155,26 @@ function ReservationsList() {
     load();
   }, [load]);
 
+  function confirmarYCancelar(item: ReservationEntry) {
+    const hoursUntilClass = item.fecha
+      ? (new Date(item.fecha).getTime() - Date.now()) / (1000 * 60 * 60)
+      : Infinity;
+
+    if (hoursUntilClass < CANCELLATION_WINDOW_HOURS) {
+      Alert.alert(
+        "¿Cancelar esta reserva?",
+        "Como faltan menos de 24 horas para la clase, los créditos no se te devuelven. ¿Igual quieres cancelar?",
+        [
+          { text: "No", style: "cancel" },
+          { text: "Sí, cancelar", style: "destructive", onPress: () => cancelar(item.id) },
+        ]
+      );
+      return;
+    }
+
+    cancelar(item.id);
+  }
+
   async function cancelar(reservationId: string) {
     setCancelState((prev) => ({ ...prev, [reservationId]: { loading: true, error: null } }));
     try {
@@ -206,7 +231,8 @@ function ReservationsList() {
       }
       renderItem={({ item }) => {
         const cancel = cancelState[item.id];
-        const puedeCancel = (item.estado ?? "Reservado") === "Reservado";
+        const claseYaPaso = item.clase?.fecha ? new Date(item.clase.fecha).getTime() <= Date.now() : false;
+        const puedeCancel = (item.estado ?? "Reservado") === "Reservado" && !claseYaPaso;
         const rating = ratingWindowState(item);
         return (
           <View style={styles.card}>
@@ -231,7 +257,7 @@ function ReservationsList() {
             {puedeCancel && (
               <Pressable
                 disabled={cancel?.loading}
-                onPress={() => cancelar(item.id)}
+                onPress={() => confirmarYCancelar(item)}
                 style={styles.cancelButton}
               >
                 {cancel?.loading ? (

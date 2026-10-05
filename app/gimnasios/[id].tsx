@@ -1,6 +1,6 @@
 import { useAuth } from "@clerk/expo";
 import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -159,7 +159,7 @@ type WaitlistState = Record<
 >;
 
 export default function GymDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, clase: targetClaseId } = useLocalSearchParams<{ id: string; clase?: string }>();
   const router = useRouter();
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -176,6 +176,8 @@ export default function GymDetailScreen() {
   const [waitlistState, setWaitlistState] = useState<WaitlistState>({});
   const [molestiasState, setMolestiasState] = useState<Record<string, string>>({});
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const [scrolledToTarget, setScrolledToTarget] = useState(false);
 
   const load = useCallback(() => {
     setState((prev) => ({ ...prev, loading: !prev.data, error: null }));
@@ -199,6 +201,18 @@ export default function GymDetailScreen() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Si se llegó acá desde "Explorar por día" con una clase puntual en mente,
+  // salta al día de esa clase — si no, se queda en el día que ya tenía
+  // seleccionado (semana[0], "Hoy") y la clase puede no estar visible.
+  useEffect(() => {
+    if (!targetClaseId || !state.data) return;
+    const clase = state.data.classes.find((c) => c.id === targetClaseId);
+    if (!clase?.fecha) return;
+    const key = DAY_KEY_FORMATTER.format(new Date(clase.fecha));
+    if (semana.some((d) => d.key === key)) setDiaSeleccionado(key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetClaseId, state.data]);
 
   useEffect(() => {
     if (!isSignedIn || !state.data) return;
@@ -368,7 +382,7 @@ export default function GymDetailScreen() {
       <Stack.Screen
         options={{ headerShown: true, title: gym.name.trim(), headerLeft: () => <BackButton /> }}
       />
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
         {gym.photoDetailUrls.length > 0 && (
           <View style={styles.photoRow}>
             {gym.photoDetailUrls.map((url, index) => (
@@ -461,7 +475,16 @@ export default function GymDetailScreen() {
           const sinCupos = clase.cuposDisponibles <= 0;
           const yaReservada = reservedSet.has(clase.id) && !book?.ok;
           return (
-            <View key={clase.id} style={styles.card}>
+            <View
+              key={clase.id}
+              style={[styles.card, clase.id === targetClaseId && styles.cardHighlighted]}
+              onLayout={(e) => {
+                if (clase.id !== targetClaseId || scrolledToTarget) return;
+                const y = e.nativeEvent.layout.y;
+                scrollRef.current?.scrollTo({ y: Math.max(y - 16, 0), animated: true });
+                setScrolledToTarget(true);
+              }}
+            >
               <Text style={styles.cardTitle}>{clase.name}</Text>
               <Text style={styles.cardSubtitle}>
                 {clase.fecha
@@ -730,6 +753,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
+  },
+  cardHighlighted: {
+    borderWidth: 2,
+    borderColor: "#ff4f3f",
   },
   cardTitle: { fontSize: 15, fontWeight: "700", color: "#063009" },
   cardSubtitle: { fontSize: 13, color: "#06300999", marginTop: 4 },

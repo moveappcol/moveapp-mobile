@@ -1,6 +1,7 @@
 import { useSignIn } from "@clerk/expo/legacy";
+import { useSSO } from "@clerk/expo";
 import { Link, useRouter } from "expo-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -10,6 +11,7 @@ import {
   Text,
   TextInput,
 } from "react-native";
+import { GoogleSignInButton, useWarmUpBrowser } from "@/components/GoogleSignInButton";
 
 type Mode = "sign-in" | "request-reset" | "reset-code";
 
@@ -19,7 +21,9 @@ function errorMessage(err: unknown, fallback: string) {
 
 export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
+  const { startSSOFlow } = useSSO();
   const router = useRouter();
+  useWarmUpBrowser();
 
   const [mode, setMode] = useState<Mode>("sign-in");
 
@@ -31,6 +35,27 @@ export default function SignInScreen() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const onGoogleSignIn = useCallback(async () => {
+    setError(null);
+    setGoogleLoading(true);
+    try {
+      const { createdSessionId, setActive: setActiveSSO } = await startSSOFlow({
+        strategy: "oauth_google",
+      });
+      if (createdSessionId && setActiveSSO) {
+        await setActiveSSO({ session: createdSessionId });
+        router.replace("/");
+      }
+      // Si no hay createdSessionId (ej. la persona canceló el flujo en el
+      // navegador), simplemente no pasa nada — no es un error que mostrar.
+    } catch (err) {
+      setError(errorMessage(err, "No pudimos iniciar sesión con Google."));
+    } finally {
+      setGoogleLoading(false);
+    }
+  }, [startSSOFlow, router]);
 
   async function onSubmit() {
     if (!isLoaded || loading) return;
@@ -227,6 +252,8 @@ export default function SignInScreen() {
           <Text style={styles.buttonText}>Iniciar sesión</Text>
         )}
       </Pressable>
+
+      <GoogleSignInButton onPress={onGoogleSignIn} loading={googleLoading} />
 
       <Text
         style={styles.link}

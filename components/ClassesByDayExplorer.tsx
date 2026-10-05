@@ -4,7 +4,14 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
 import { precioEfectivo, type Clase } from "@/lib/classes";
-import { DAY_KEY_FORMATTER, semanaActual, formatHora } from "@/lib/dias";
+import {
+  DAY_KEY_FORMATTER,
+  semanaActual,
+  formatHora,
+  bogotaHour,
+  formatRangoHorario,
+  RANGOS_HORARIO,
+} from "@/lib/dias";
 
 const CACHE_KEY = "clasesPorDia";
 
@@ -21,9 +28,7 @@ type ScreenState = { loading: boolean; error: string | null; data: ClasesPorDiaR
 
 /** Equivalente móvil de ClassesByDayExplorer.tsx en la web — mismo criterio
  * de filtrado (clases sin cupo se esconden salvo que la persona ya las
- * tenga reservadas), pero sin el filtro de rango de horario de la web
- * (acá ya son dos filas de chips, una tercera no cabe cómodo en una
- * pantalla de celular). */
+ * tenga reservadas), incluido el filtro de rango de horario. */
 export default function ClassesByDayExplorer() {
   const cached = getCached<ClasesPorDiaResponse>(CACHE_KEY);
   const [state, setState] = useState<ScreenState>({
@@ -34,6 +39,7 @@ export default function ClassesByDayExplorer() {
   const semana = useMemo(() => semanaActual(), []);
   const [diaSeleccionado, setDiaSeleccionado] = useState(() => semana[0].key);
   const [actividadSeleccionada, setActividadSeleccionada] = useState<string | null>(null);
+  const [rangoSeleccionado, setRangoSeleccionado] = useState<string | null>(null);
 
   useEffect(() => {
     apiFetch<ClasesPorDiaResponse>("/clases-por-dia")
@@ -67,6 +73,7 @@ export default function ClassesByDayExplorer() {
   );
 
   const diaActivo = semana.find((d) => d.key === diaSeleccionado) ?? semana[0];
+  const rangoActivo = RANGOS_HORARIO.find((r) => r.key === rangoSeleccionado) ?? null;
   const reservedSet = useMemo(
     () => new Set(state.data?.reservedClaseIds ?? []),
     [state.data]
@@ -86,10 +93,16 @@ export default function ClassesByDayExplorer() {
             : (gym?.activities.includes(actividadSeleccionada) ?? false);
           if (!coincide) return false;
         }
+
+        if (rangoActivo) {
+          const hora = bogotaHour(c.fecha);
+          if (hora < rangoActivo.startHour || hora >= rangoActivo.endHour) return false;
+        }
+
         return true;
       })
       .sort((a, b) => (a.fecha ?? "").localeCompare(b.fecha ?? ""));
-  }, [state.data, diaActivo, actividadSeleccionada, gymsById, reservedSet]);
+  }, [state.data, diaActivo, actividadSeleccionada, rangoActivo, gymsById, reservedSet]);
 
   if (state.loading) {
     return (
@@ -147,6 +160,31 @@ export default function ClassesByDayExplorer() {
         </ScrollView>
       )}
 
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
+        <Pressable
+          onPress={() => setRangoSeleccionado(null)}
+          style={[styles.rangoChip, rangoSeleccionado === null && styles.rangoChipActive]}
+        >
+          <Text style={[styles.rangoChipText, rangoSeleccionado === null && styles.rangoChipTextActive]}>
+            Todos los horarios
+          </Text>
+        </Pressable>
+        {RANGOS_HORARIO.map((rango) => {
+          const active = rangoSeleccionado === rango.key;
+          return (
+            <Pressable
+              key={rango.key}
+              onPress={() => setRangoSeleccionado(active ? null : rango.key)}
+              style={[styles.rangoChip, active && styles.rangoChipActive]}
+            >
+              <Text style={[styles.rangoChipText, active && styles.rangoChipTextActive]}>
+                {formatRangoHorario(rango)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
       <View style={styles.list}>
         {clasesDelDia.length === 0 ? (
           <Text style={styles.empty}>No hay clases programadas para este día.</Text>
@@ -155,7 +193,11 @@ export default function ClassesByDayExplorer() {
             const gym = clase.gimnasioId ? gymsById[clase.gimnasioId] : undefined;
             const yaReservada = reservedSet.has(clase.id);
             return (
-              <Link key={clase.id} href={`/gimnasios/${clase.gimnasioId}`} asChild>
+              <Link
+                key={clase.id}
+                href={{ pathname: "/gimnasios/[id]", params: { id: clase.gimnasioId ?? "", clase: clase.id } }}
+                asChild
+              >
                 <Pressable style={styles.card}>
                   <Text style={styles.cardGym}>{gym?.name ?? "Gimnasio"}</Text>
                   <View style={styles.cardHeaderRow}>
@@ -225,6 +267,17 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: "#ff4f3f", borderColor: "#ff4f3f" },
   chipText: { fontSize: 12, fontWeight: "700", color: "#06300999" },
   chipTextActive: { color: "#fff" },
+  rangoChip: {
+    borderWidth: 1,
+    borderColor: "#06300922",
+    borderRadius: 999,
+    paddingVertical: 7,
+    paddingHorizontal: 13,
+    marginRight: 8,
+  },
+  rangoChipActive: { backgroundColor: "#063009", borderColor: "#063009" },
+  rangoChipText: { fontSize: 12, fontWeight: "700", color: "#06300999" },
+  rangoChipTextActive: { color: "#fff" },
   list: { marginTop: 16, gap: 12 },
   empty: { fontSize: 13, color: "#06300999" },
   card: { borderWidth: 1, borderColor: "#06300922", borderRadius: 18, padding: 16 },

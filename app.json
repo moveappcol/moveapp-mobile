@@ -3,7 +3,7 @@
     "name": "UNIQUE",
     "slug": "unique-app",
     "scheme": "uniqueapp",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -67,7 +67,8 @@
         {
           "userTrackingPermission": "Usamos este dato para medir qué tan bien están funcionando nuestros anuncios."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

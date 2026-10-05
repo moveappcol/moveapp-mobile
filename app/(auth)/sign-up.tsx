@@ -1,6 +1,7 @@
 import { useSignUp } from "@clerk/expo/legacy";
+import { useSSO } from "@clerk/expo";
 import { Link, useRouter } from "expo-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -10,19 +11,41 @@ import {
   Text,
   TextInput,
 } from "react-native";
+import { GoogleSignInButton, useWarmUpBrowser } from "@/components/GoogleSignInButton";
 
 export default function SignUpScreen() {
   const { signUp, setActive, isLoaded } = useSignUp();
+  const { startSSOFlow } = useSSO();
   const router = useRouter();
+  useWarmUpBrowser();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   function errorMessage(err: unknown, fallback: string) {
     return (err as { errors?: { message?: string }[] })?.errors?.[0]?.message ?? fallback;
   }
+
+  const onGoogleSignUp = useCallback(async () => {
+    setError(null);
+    setGoogleLoading(true);
+    try {
+      const { createdSessionId, setActive: setActiveSSO } = await startSSOFlow({
+        strategy: "oauth_google",
+      });
+      if (createdSessionId && setActiveSSO) {
+        await setActiveSSO({ session: createdSessionId });
+        router.replace("/");
+      }
+    } catch (err) {
+      setError(errorMessage(err, "No pudimos crear tu cuenta con Google."));
+    } finally {
+      setGoogleLoading(false);
+    }
+  }, [startSSOFlow, router]);
 
   /** Sin verificación por código: la cuenta se crea y se activa de una vez,
    * para que sea rápido crear cuenta. Depende de que "Verify at sign-up"
@@ -85,6 +108,8 @@ export default function SignUpScreen() {
           <Text style={styles.buttonText}>Crear cuenta</Text>
         )}
       </Pressable>
+
+      <GoogleSignInButton onPress={onGoogleSignUp} loading={googleLoading} />
 
       <Link href="/sign-in" style={styles.link}>
         ¿Ya tienes cuenta? Inicia sesión
