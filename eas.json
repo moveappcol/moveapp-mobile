@@ -9,19 +9,22 @@
       "distribution": "internal",
       "env": {
         "EAS_NO_FROZEN_LOCKFILE": "1"
-      }
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
       "env": {
         "EAS_NO_FROZEN_LOCKFILE": "1"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
       "env": {
         "EAS_NO_FROZEN_LOCKFILE": "1"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {

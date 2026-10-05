@@ -25,7 +25,11 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "com.google.android.gms.permission.AD_ID",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "com.google.android.gms.permission.AD_ID"
       ],
       "config": {
         "googleMaps": {
@@ -79,6 +83,12 @@
         "projectId": "fe5b463e-324e-49b0-acf9-fbd2cd6aab27"
       }
     },
-    "owner": "uniqueappcol"
+    "owner": "uniqueappcol",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/fe5b463e-324e-49b0-acf9-fbd2cd6aab27"
+    }
   }
 }
