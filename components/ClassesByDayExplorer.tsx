@@ -11,6 +11,7 @@ import {
   bogotaHour,
   formatRangoHorario,
   RANGOS_HORARIO,
+  claseYaPaso,
 } from "@/lib/dias";
 
 const CACHE_KEY = "clasesPorDia";
@@ -84,6 +85,7 @@ export default function ClassesByDayExplorer() {
       .filter((c) => {
         if (!c.fecha) return false;
         if (DAY_KEY_FORMATTER.format(new Date(c.fecha)) !== diaActivo.key) return false;
+        if (claseYaPaso(c.fecha)) return false;
         if (!reservedSet.has(c.id) && c.cuposDisponibles <= 0) return false;
 
         if (actividadSeleccionada) {

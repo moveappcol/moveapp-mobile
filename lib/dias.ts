@@ -111,3 +111,11 @@ function formatHourLabel(hour: number): string {
 export function formatRangoHorario(rango: RangoHorario): string {
   return `${formatHourLabel(rango.startHour)} – ${formatHourLabel(rango.endHour)}`;
 }
+
+/** A medida que avanza el día, las clases cuya hora ya pasó dejan de
+ * mostrarse en las listas — ej. a las 11am ya no tiene sentido seguir
+ * viendo la clase de las 5am del mismo día. Mismo criterio que web
+ * (src/lib/dias.ts). */
+export function claseYaPaso(fecha: string): boolean {
+  return new Date(fecha).getTime() <= Date.now();
+}

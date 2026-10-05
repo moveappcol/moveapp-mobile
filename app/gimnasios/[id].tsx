@@ -20,7 +20,7 @@ import { Skeleton } from "@/components/Skeleton";
 import { useFavorites } from "@/lib/favorites";
 import { GymLocationCard } from "@/components/GymLocationCard";
 import { precioEfectivo, type Clase } from "@/lib/classes";
-import { DAY_KEY_FORMATTER, semanaActual, formatHora, formatFechaLarga } from "@/lib/dias";
+import { DAY_KEY_FORMATTER, semanaActual, formatHora, formatFechaLarga, claseYaPaso } from "@/lib/dias";
 import { esGimnasioDeExperiencias } from "@/lib/gyms";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -365,10 +365,11 @@ export default function GymDetailScreen() {
   const diaActivo = semana.find((d) => d.key === diaSeleccionado) ?? semana[0];
   const clasesDelDia = modoPlano
     ? classes
-        .filter((c) => c.fecha && new Date(c.fecha).getTime() > Date.now())
+        .filter((c) => c.fecha && !claseYaPaso(c.fecha))
         .sort((a, b) => (a.fecha as string).localeCompare(b.fecha as string))
     : classes.filter(
-        (c) => c.fecha && DAY_KEY_FORMATTER.format(new Date(c.fecha)) === diaActivo.key
+        (c) =>
+          c.fecha && DAY_KEY_FORMATTER.format(new Date(c.fecha)) === diaActivo.key && !claseYaPaso(c.fecha)
       );
   const generoLabel =
     gym.genero === "solo_mujeres"
