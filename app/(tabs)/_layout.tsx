@@ -1,7 +1,7 @@
 import { useAuth } from "@clerk/expo";
 import { Link, Tabs, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 import { TabIcon } from "@/components/TabIcon";
 import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
@@ -31,14 +31,13 @@ function CreditsBadge({ credits }: { credits: number | null }) {
 
 const headerStyles = StyleSheet.create({
   creditsBadge: {
-    marginRight: 16,
+    marginLeft: 16,
     backgroundColor: "#ff4f3f1a",
     borderRadius: 999,
     paddingVertical: 5,
     paddingHorizontal: 12,
   },
   creditsBadgeText: { fontSize: 12.5, fontWeight: "700", color: "#ff4f3f" },
-  headerRightRow: { flexDirection: "row", alignItems: "center" },
 });
 
 /** Apenas se sabe que hay sesión iniciada, pedimos de una vez los datos que
@@ -106,10 +105,9 @@ export default function TabsLayout() {
         headerTintColor: "#063009",
         tabBarActiveTintColor: "#ff4f3f",
         tabBarInactiveTintColor: "#06300999",
-        // Por defecto, cualquier pestaña muestra cuántos créditos quedan —
-        // se sobreescribe solo en "index", que además necesita el link de
-        // "¿Cómo funciona?" al lado.
-        headerRight: () => <CreditsBadge credits={credits} />,
+        // Por defecto, cualquier pestaña muestra cuántos créditos quedan, a
+        // la izquierda del título (que React Navigation centra solo).
+        headerLeft: () => <CreditsBadge credits={credits} />,
       }}
     >
       <Tabs.Screen
@@ -117,20 +115,18 @@ export default function TabsLayout() {
         options={{
           title: "Gimnasios",
           tabBarIcon: ({ color }) => <TabIcon name="gimnasios" color={color} />,
+          headerLeft: () => <CreditsBadge credits={credits} />,
           // Acceso directo a "Cómo funciona" desde la primera pantalla que ve
           // cualquiera — antes esa pantalla existía pero solo se llegaba por
           // un link suelto dentro de "Nosotros", así que casi nadie la veía.
           headerRight: () => (
-            <View style={headerStyles.headerRightRow}>
-              <CreditsBadge credits={credits} />
-              <Link href="/como-funciona" asChild>
-                <Pressable hitSlop={10} style={{ marginRight: 16 }}>
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#063009" }}>
-                    ¿Cómo funciona?
-                  </Text>
-                </Pressable>
-              </Link>
-            </View>
+            <Link href="/como-funciona" asChild>
+              <Pressable hitSlop={10} style={{ marginRight: 16 }}>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#063009" }}>
+                  ¿Cómo funciona?
+                </Text>
+              </Pressable>
+            </Link>
           ),
         }}
       />
