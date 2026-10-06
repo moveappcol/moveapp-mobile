@@ -1,7 +1,17 @@
 import { useAuth, useUser } from "@clerk/expo";
 import { Link } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
 import { CREDIT_PLANS } from "@/lib/credits-pricing";
@@ -31,7 +41,7 @@ type ScreenState = {
 
 function GuestView() {
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Tu cuenta</Text>
       <Text style={styles.guestText}>
         Puedes explorar los gimnasios sin cuenta. Para reservar clases y comprar créditos,
@@ -53,7 +63,7 @@ function GuestView() {
       <Pressable style={styles.whatsappButton} onPress={() => Linking.openURL(whatsappUrl())}>
         <Text style={styles.whatsappButtonText}>¿Dudas? Escríbenos por WhatsApp</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -210,7 +220,7 @@ function SignedInView() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.email}>{user?.primaryEmailAddress?.emailAddress}</Text>
 
       {state.loading && <ActivityIndicator style={styles.loader} />}
@@ -335,7 +345,7 @@ function SignedInView() {
         )}
       </Pressable>
       {deleteError && <Text style={styles.cancelPlanError}>{deleteError}</Text>}
-    </View>
+    </ScrollView>
   );
 }
 
@@ -354,7 +364,7 @@ export default function PerfilScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: "#fff" },
+  container: { flexGrow: 1, padding: 24, backgroundColor: "#fff" },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   title: {
     fontSize: 22,
