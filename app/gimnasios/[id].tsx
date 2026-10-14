@@ -217,10 +217,13 @@ export default function GymDetailScreen() {
   useEffect(() => {
     if (!isSignedIn || !state.data) return;
     const reservedIds = new Set(state.data.reservedClaseIds ?? []);
-    const llenas = state.data.classes.filter(
-      (c) => c.cuposDisponibles <= 0 && !reservedIds.has(c.id)
+    // Igual que en web: el estado de lista de espera se precalcula tanto
+    // para clases llenas como para las marcadas "Próximamente" (ahí los
+    // cupos no importan — siempre muestran el botón de "Avísame").
+    const necesitanEstado = state.data.classes.filter(
+      (c) => (c.cuposDisponibles <= 0 || c.proximamente) && !reservedIds.has(c.id)
     );
-    for (const clase of llenas) {
+    for (const clase of necesitanEstado) {
       if (waitlistState[clase.id]) continue;
       (async () => {
         try {
@@ -503,7 +506,7 @@ export default function GymDetailScreen() {
                 )}
                 {precioEfectivo(clase)} créditos
               </Text>
-              {clase.cuposDisponibles > 0 && clase.cuposDisponibles <= 2 && (
+              {!clase.proximamente && clase.cuposDisponibles > 0 && clase.cuposDisponibles <= 2 && (
                 <Text style={styles.cuposAviso}>
                   {clase.cuposDisponibles === 1
                     ? "Último cupo disponible"
@@ -552,20 +555,66 @@ export default function GymDetailScreen() {
 
               {yaReservada ? (
                 <Text style={styles.successText}>Ya reservaste esta clase.</Text>
-              ) : !reservasAbiertas ? (
+              ) : !clase.proximamente && !reservasAbiertas ? (
                 <Text style={styles.mutedText}>
                   Todavía estamos cargando los cupos — las reservas abren el {reservasAbrenLabel}.
                 </Text>
               ) : !clase.fecha ? (
                 <Text style={styles.mutedText}>Todavía no tiene fecha confirmada.</Text>
-              ) : !sinCupos && isBookingClosed(clase.fecha, gym.bookingCutoffMinutes) ? (
+              ) : !clase.proximamente && !sinCupos && isBookingClosed(clase.fecha, gym.bookingCutoffMinutes) ? (
                 <Text style={styles.mutedText}>Las reservas para esta clase ya cerraron.</Text>
               ) : !isLoaded ? null : !isSignedIn ? (
                 <Link href="/sign-in" asChild>
                   <Pressable style={styles.button}>
-                    <Text style={styles.buttonText}>Inicia sesión para reservar</Text>
+                    <Text style={styles.buttonText}>
+                      {clase.proximamente
+                        ? "Inicia sesión para unirte a la lista"
+                        : "Inicia sesión para reservar"}
+                    </Text>
                   </Pressable>
                 </Link>
+              ) : clase.proximamente ? (
+                (() => {
+                  const waitlist = waitlistState[clase.id];
+                  return (
+                    <View>
+                      <Text style={styles.mutedText}>
+                        Todavía no se puede reservar — muy pronto abrimos cupos.
+                      </Text>
+                      {waitlist?.error && <Text style={styles.errorText}>{waitlist.error}</Text>}
+                      {waitlist?.enEspera ? (
+                        <>
+                          <Text style={styles.waitlistText}>
+                            Ya estás en la lista — te avisamos apenas se pueda reservar.
+                          </Text>
+                          <Pressable
+                            style={[styles.button, styles.buttonOutline]}
+                            disabled={waitlist.loading}
+                            onPress={() => salirListaEspera(clase.id)}
+                          >
+                            {waitlist.loading ? (
+                              <ActivityIndicator color="#ff4f3f" />
+                            ) : (
+                              <Text style={styles.buttonOutlineText}>Quitarme de la lista</Text>
+                            )}
+                          </Pressable>
+                        </>
+                      ) : (
+                        <Pressable
+                          style={styles.button}
+                          disabled={waitlist?.loading}
+                          onPress={() => unirseListaEspera(clase.id)}
+                        >
+                          {waitlist?.loading ? (
+                            <ActivityIndicator color="#fff" />
+                          ) : (
+                            <Text style={styles.buttonText}>Avísame cuando pueda reservar</Text>
+                          )}
+                        </Pressable>
+                      )}
+                    </View>
+                  );
+                })()
               ) : sinCupos ? (
                 (() => {
                   const waitlist = waitlistState[clase.id];

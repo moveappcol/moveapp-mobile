@@ -86,7 +86,7 @@ export default function ClassesByDayExplorer() {
         if (!c.fecha) return false;
         if (DAY_KEY_FORMATTER.format(new Date(c.fecha)) !== diaActivo.key) return false;
         if (claseYaPaso(c.fecha)) return false;
-        if (!reservedSet.has(c.id) && c.cuposDisponibles <= 0) return false;
+        if (!c.proximamente && !reservedSet.has(c.id) && c.cuposDisponibles <= 0) return false;
 
         if (actividadSeleccionada) {
           const gym = c.gimnasioId ? gymsById[c.gimnasioId] : undefined;
@@ -224,11 +224,13 @@ export default function ClassesByDayExplorer() {
                   <Text style={styles.cardStatus}>
                     {yaReservada
                       ? "Ya reservaste esta clase"
-                      : clase.cuposDisponibles <= 2
-                        ? clase.cuposDisponibles === 1
-                          ? "Último cupo disponible"
-                          : "Últimos 2 cupos disponibles"
-                        : "Cupos disponibles"}
+                      : clase.proximamente
+                        ? "Próximamente"
+                        : clase.cuposDisponibles <= 2
+                          ? clase.cuposDisponibles === 1
+                            ? "Último cupo disponible"
+                            : "Últimos 2 cupos disponibles"
+                          : "Cupos disponibles"}
                   </Text>
                 </Pressable>
               </Link>
