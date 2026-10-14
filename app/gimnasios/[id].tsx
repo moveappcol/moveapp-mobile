@@ -608,7 +608,7 @@ export default function GymDetailScreen() {
                           {waitlist?.loading ? (
                             <ActivityIndicator color="#fff" />
                           ) : (
-                            <Text style={styles.buttonText}>Avísame cuando pueda reservar</Text>
+                            <Text style={styles.buttonText}>¡Quiero ser parte!</Text>
                           )}
                         </Pressable>
                       )}
