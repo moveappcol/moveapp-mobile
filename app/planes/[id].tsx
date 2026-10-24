@@ -29,7 +29,10 @@ type CouponState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "invalid"; error: string }
-  | { status: "valid-descuento"; descuentoPorcentaje: number };
+  | { status: "valid-descuento"; descuentoPorcentaje: number }
+  | { status: "valid-gratis"; creditos: number };
+
+type RedeemFreeCouponResult = { ok: true; credits: number } | { ok: false; error: string };
 
 type ValidacionCodigoReferido = { ok: true; esInfluencer: boolean } | { ok: false; error: string };
 
@@ -60,6 +63,7 @@ export default function PlanCheckoutScreen() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [success, setSuccess] = useState<number | null>(null);
+  const [freeRedeemed, setFreeRedeemed] = useState<number | null>(null);
 
   const [couponInput, setCouponInput] = useState("");
   const [coupon, setCoupon] = useState<CouponState>({ status: "idle" });
@@ -73,11 +77,11 @@ export default function PlanCheckoutScreen() {
   }, []);
 
   useEffect(() => {
-    if (success !== null || pending) {
+    if (success !== null || pending || freeRedeemed !== null) {
       const timeout = setTimeout(() => router.replace("/perfil"), 1800);
       return () => clearTimeout(timeout);
     }
-  }, [success, pending, router]);
+  }, [success, pending, freeRedeemed, router]);
 
   if (!plan) {
     return (
@@ -99,12 +103,34 @@ export default function PlanCheckoutScreen() {
       if (!result.ok) {
         setCoupon({ status: "invalid", error: result.error });
       } else if (result.tipo === "Créditos gratis") {
-        setCoupon({ status: "invalid", error: "Ese cupón no aplica a este pago." });
+        setCoupon({ status: "valid-gratis", creditos: result.creditos });
       } else {
         setCoupon({ status: "valid-descuento", descuentoPorcentaje: result.descuentoPorcentaje });
       }
     } catch {
       setCoupon({ status: "invalid", error: "No pudimos validar el cupón." });
+    }
+  }
+
+  async function handleRedeemFreeCoupon() {
+    if (coupon.status !== "valid-gratis") return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      const token = await getToken();
+      const result = await apiFetch<RedeemFreeCouponResult>("/cupon/canjear", token, {
+        method: "POST",
+        body: { code: couponInput.trim() },
+      });
+      if (result.ok) {
+        setFreeRedeemed(result.credits);
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No pudimos canjear el cupón.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -216,6 +242,10 @@ export default function PlanCheckoutScreen() {
             ¡Listo! Tu suscripción a {plan.name} quedó activa y ya tienes {success} créditos
             disponibles.
           </Text>
+        ) : freeRedeemed !== null ? (
+          <Text style={styles.successText}>
+            ¡Regalo canjeado! 🎁 Te agregamos {freeRedeemed} créditos a tu cuenta.
+          </Text>
         ) : pending ? (
           <Text style={styles.successText}>
             Tu pago está siendo procesado. Te avisaremos apenas se confirme — revisa tu perfil en
@@ -225,57 +255,61 @@ export default function PlanCheckoutScreen() {
           <View style={styles.form}>
             {configError && <Text style={styles.errorText}>{configError}</Text>}
 
-            <Text style={styles.label}>Número de tarjeta</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="number-pad"
-              placeholder="4242 4242 4242 4242"
-              placeholderTextColor="#06300966"
-              value={number}
-              onChangeText={setNumber}
-            />
-
-            <Text style={styles.label}>Nombre en la tarjeta</Text>
-            <TextInput style={styles.input} value={cardHolder} onChangeText={setCardHolder} />
-
-            <View style={styles.row}>
-              <View style={styles.rowItem}>
-                <Text style={styles.label}>Mes</Text>
+            {coupon.status !== "valid-gratis" && (
+              <>
+                <Text style={styles.label}>Número de tarjeta</Text>
                 <TextInput
                   style={styles.input}
                   keyboardType="number-pad"
-                  maxLength={2}
-                  placeholder="MM"
+                  placeholder="4242 4242 4242 4242"
                   placeholderTextColor="#06300966"
-                  value={expMonth}
-                  onChangeText={setExpMonth}
+                  value={number}
+                  onChangeText={setNumber}
                 />
-              </View>
-              <View style={styles.rowItem}>
-                <Text style={styles.label}>Año</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  placeholder="AA"
-                  placeholderTextColor="#06300966"
-                  value={expYear}
-                  onChangeText={setExpYear}
-                />
-              </View>
-              <View style={styles.rowItem}>
-                <Text style={styles.label}>CVC</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="number-pad"
-                  maxLength={4}
-                  value={cvc}
-                  onChangeText={setCvc}
-                />
-              </View>
-            </View>
 
-            <Text style={styles.label}>¿Tienes un cupón? (opcional)</Text>
+                <Text style={styles.label}>Nombre en la tarjeta</Text>
+                <TextInput style={styles.input} value={cardHolder} onChangeText={setCardHolder} />
+
+                <View style={styles.row}>
+                  <View style={styles.rowItem}>
+                    <Text style={styles.label}>Mes</Text>
+                    <TextInput
+                      style={styles.input}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      placeholder="MM"
+                      placeholderTextColor="#06300966"
+                      value={expMonth}
+                      onChangeText={setExpMonth}
+                    />
+                  </View>
+                  <View style={styles.rowItem}>
+                    <Text style={styles.label}>Año</Text>
+                    <TextInput
+                      style={styles.input}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      placeholder="AA"
+                      placeholderTextColor="#06300966"
+                      value={expYear}
+                      onChangeText={setExpYear}
+                    />
+                  </View>
+                  <View style={styles.rowItem}>
+                    <Text style={styles.label}>CVC</Text>
+                    <TextInput
+                      style={styles.input}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      value={cvc}
+                      onChangeText={setCvc}
+                    />
+                  </View>
+                </View>
+              </>
+            )}
+
+            <Text style={styles.label}>Te regalaron un plan, canjéalo aquí (opcional)</Text>
             <View style={styles.codeRow}>
               <TextInput
                 style={[styles.input, styles.codeInput]}
@@ -304,79 +338,105 @@ export default function PlanCheckoutScreen() {
                 Cupón aplicado — {coupon.descuentoPorcentaje}% de descuento ✓
               </Text>
             )}
-
-            <Text style={styles.label}>¿Alguien te refirió? (opcional)</Text>
-            <View style={styles.codeRow}>
-              <TextInput
-                style={[styles.input, styles.codeInput]}
-                placeholder="Código de referido"
-                placeholderTextColor="#06300966"
-                autoCapitalize="characters"
-                value={codigoReferidoInput}
-                onChangeText={(text) => {
-                  setCodigoReferidoInput(text);
-                  setReferido({ status: "idle" });
-                }}
-              />
-              <Pressable
-                style={styles.codeButton}
-                disabled={referido.status === "loading" || !codigoReferidoInput.trim()}
-                onPress={handleValidarReferido}
-              >
-                <Text style={styles.codeButtonText}>
-                  {referido.status === "loading" ? "..." : "Validar"}
-                </Text>
-              </Pressable>
-            </View>
-            {referido.status === "invalid" && <Text style={styles.errorText}>{referido.error}</Text>}
-            {referido.status === "valid" && (
+            {coupon.status === "valid-gratis" && (
               <Text style={styles.successTextSmall}>
-                {referido.esInfluencer
-                  ? "Código válido — tú y quien te refirió ganan 5 créditos cada uno ✓"
-                  : "Código válido ✓"}
+                Te regalaron un plan, canjéalo aquí 🎁 — te da {coupon.creditos} créditos gratis,
+                sin necesidad de tarjeta.
               </Text>
             )}
 
-            <View style={styles.acceptRow}>
-              <Switch value={accepted} onValueChange={setAccepted} />
-              <Text style={styles.acceptText}>
-                Acepto los términos y condiciones y la autorización de tratamiento de datos de
-                Wompi.
-                {config && (
-                  <Text style={styles.linkText}>
-                    {"\n"}
-                    <Text onPress={() => Linking.openURL(config.permalinkAcceptance)}>
-                      Ver términos
+            {coupon.status === "valid-gratis" ? (
+              <>
+                {error && <Text style={styles.errorText}>{error}</Text>}
+                <Pressable
+                  disabled={submitting}
+                  onPress={handleRedeemFreeCoupon}
+                  style={[styles.button, submitting && styles.buttonDisabled]}
+                >
+                  {submitting ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.buttonText}>Canjear {coupon.creditos} créditos gratis</Text>
+                  )}
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text style={styles.label}>¿Alguien te refirió? (opcional)</Text>
+                <View style={styles.codeRow}>
+                  <TextInput
+                    style={[styles.input, styles.codeInput]}
+                    placeholder="Código de referido"
+                    placeholderTextColor="#06300966"
+                    autoCapitalize="characters"
+                    value={codigoReferidoInput}
+                    onChangeText={(text) => {
+                      setCodigoReferidoInput(text);
+                      setReferido({ status: "idle" });
+                    }}
+                  />
+                  <Pressable
+                    style={styles.codeButton}
+                    disabled={referido.status === "loading" || !codigoReferidoInput.trim()}
+                    onPress={handleValidarReferido}
+                  >
+                    <Text style={styles.codeButtonText}>
+                      {referido.status === "loading" ? "..." : "Validar"}
                     </Text>
-                    {"  ·  "}
-                    <Text onPress={() => Linking.openURL(config.permalinkPersonalAuth)}>
-                      Ver tratamiento de datos
-                    </Text>
+                  </Pressable>
+                </View>
+                {referido.status === "invalid" && <Text style={styles.errorText}>{referido.error}</Text>}
+                {referido.status === "valid" && (
+                  <Text style={styles.successTextSmall}>
+                    {referido.esInfluencer
+                      ? "Código válido — tú y quien te refirió ganan 5 créditos cada uno ✓"
+                      : "Código válido ✓"}
                   </Text>
                 )}
-              </Text>
-            </View>
 
-            <Text style={styles.disclaimer}>
-              Puedes cancelar tus clases hasta 24h antes sin costo. Para promover la diversidad de
-              la red, puedes acceder a cada gimnasio un máximo de 3 veces al mes.
-            </Text>
+                <View style={styles.acceptRow}>
+                  <Switch value={accepted} onValueChange={setAccepted} />
+                  <Text style={styles.acceptText}>
+                    Acepto los términos y condiciones y la autorización de tratamiento de datos de
+                    Wompi.
+                    {config && (
+                      <Text style={styles.linkText}>
+                        {"\n"}
+                        <Text onPress={() => Linking.openURL(config.permalinkAcceptance)}>
+                          Ver términos
+                        </Text>
+                        {"  ·  "}
+                        <Text onPress={() => Linking.openURL(config.permalinkPersonalAuth)}>
+                          Ver tratamiento de datos
+                        </Text>
+                      </Text>
+                    )}
+                  </Text>
+                </View>
 
-            {error && <Text style={styles.errorText}>{error}</Text>}
-
-            <Pressable
-              disabled={submitting || !config}
-              onPress={handleSubmit}
-              style={[styles.button, (submitting || !config) && styles.buttonDisabled]}
-            >
-              {submitting ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>
-                  Suscribirme — {formatCOP(discountedPrice ?? plan.price)}
+                <Text style={styles.disclaimer}>
+                  Puedes cancelar tus clases hasta 24h antes sin costo. Para promover la
+                  diversidad de la red, puedes acceder a cada gimnasio un máximo de 3 veces al
+                  mes.
                 </Text>
-              )}
-            </Pressable>
+
+                {error && <Text style={styles.errorText}>{error}</Text>}
+
+                <Pressable
+                  disabled={submitting || !config}
+                  onPress={handleSubmit}
+                  style={[styles.button, (submitting || !config) && styles.buttonDisabled]}
+                >
+                  {submitting ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.buttonText}>
+                      Suscribirme — {formatCOP(discountedPrice ?? plan.price)}
+                    </Text>
+                  )}
+                </Pressable>
+              </>
+            )}
           </View>
         )}
       </ScrollView>
