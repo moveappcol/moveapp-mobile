@@ -1,6 +1,6 @@
 import { useAuth } from "@clerk/expo";
-import { Link, Tabs, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { Link, Tabs, useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text } from "react-native";
 import { TabIcon } from "@/components/TabIcon";
 import { apiFetch } from "@/lib/api";
@@ -68,6 +68,27 @@ export default function TabsLayout() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const [credits, setCredits] = useState<number | null>(
     getCached<{ credits: CreditsResponse }>("perfil")?.credits.credits ?? null
+  );
+
+  // Vuelve a pedir el saldo cada vez que se regresa a las pestañas (ej. al
+  // canjear un regalo o un cupón en /canjear, que vive fuera de este grupo
+  // de rutas) — sin esto, la insignia del header se quedaba con el número
+  // de créditos de cuando se abrió la app, aunque el saldo real ya hubiera
+  // cambiado.
+  useFocusEffect(
+    useCallback(() => {
+      if (!isLoaded || !isSignedIn) return;
+      (async () => {
+        try {
+          const token = await getToken();
+          const credits = await apiFetch<CreditsResponse>("/me/credits", token);
+          setCredits(credits.credits);
+        } catch {
+          // si falla, se queda con el número que ya tenía
+        }
+      })();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLoaded, isSignedIn])
   );
 
   useEffect(() => {
