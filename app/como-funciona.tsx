@@ -78,6 +78,10 @@ const FAQS: { q: string; a: string }[] = [
     a: "No. UNIQUE está pensado para darte flexibilidad: adquieres tu plan de créditos según lo que elijas, sin permanencias forzosas de largo plazo, puedes cancelar tu plan cuando quieras.",
   },
   {
+    q: "¿Puedo comprar créditos sin plan?",
+    a: "Sí. Puedes comprar créditos sueltos a $8.000 cada uno, desde 1 crédito, para reservar esa clase o experiencia específica que quieres probar. Tienen vigencia de 1 mes. Si entrenas seguido, los planes te salen más baratos por crédito.",
+  },
+  {
     q: "Tengo un gimnasio o estudio y quiero ser aliado de UNIQUE, ¿cómo hago?",
     a: "Nos encantaría conocerte. Escríbenos a través del formulario de contacto en nuestra página web y nos pondremos en contacto.",
   },
