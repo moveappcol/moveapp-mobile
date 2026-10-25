@@ -13,14 +13,14 @@ export const CREDIT_TOPUPS: CreditPlan[] = [
 ];
 
 /** Créditos sueltos: mismo cálculo que precioCreditosSueltos en el repo
- * web (src/lib/credits-pricing.ts) — mantener sincronizado si cambia. */
+ * web (src/lib/credits-pricing.ts) — mantener sincronizado si cambia.
+ * Mínimo de 3 créditos (no desde 1): precio siempre exacto, sin cargo
+ * operativo aparte para compras chicas. */
 export const PRECIO_CREDITO_SUELTO = 8_000;
-export const CARGO_OPERATIVO_UMBRAL_CREDITOS = 3;
-export const CARGO_OPERATIVO_CREDITOS_SUELTOS = 2_000;
+export const MINIMO_CREDITOS_SUELTOS = 3;
 
 export function precioCreditosSueltos(cantidad: number): number {
-  const base = cantidad * PRECIO_CREDITO_SUELTO;
-  return cantidad < CARGO_OPERATIVO_UMBRAL_CREDITOS ? base + CARGO_OPERATIVO_CREDITOS_SUELTOS : base;
+  return cantidad * PRECIO_CREDITO_SUELTO;
 }
 
 export function formatCOP(value: number): string {

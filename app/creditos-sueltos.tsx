@@ -15,8 +15,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import { BackButton } from "@/components/BackButton";
 import {
-  CARGO_OPERATIVO_CREDITOS_SUELTOS,
-  CARGO_OPERATIVO_UMBRAL_CREDITOS,
+  MINIMO_CREDITOS_SUELTOS,
   PRECIO_CREDITO_SUELTO,
   formatCOP,
   precioCreditosSueltos,
@@ -37,7 +36,7 @@ export default function CreditosSueltosScreen() {
   const [config, setConfig] = useState<Config | null>(null);
   const [configError, setConfigError] = useState<string | null>(null);
 
-  const [cantidad, setCantidad] = useState(1);
+  const [cantidad, setCantidad] = useState(MINIMO_CREDITOS_SUELTOS);
   const precio = precioCreditosSueltos(cantidad);
 
   const [number, setNumber] = useState("");
@@ -64,7 +63,7 @@ export default function CreditosSueltosScreen() {
   }, [success, router]);
 
   function ajustarCantidad(delta: number) {
-    setCantidad((prev) => Math.max(1, prev + delta));
+    setCantidad((prev) => Math.max(MINIMO_CREDITOS_SUELTOS, prev + delta));
   }
 
   async function handleSubmit() {
@@ -116,7 +115,8 @@ export default function CreditosSueltosScreen() {
         <Text style={styles.title}>Créditos sueltos</Text>
         <Text style={styles.subtitle}>
           {formatCOP(PRECIO_CREDITO_SUELTO)} por crédito, sin plan — ideal para probar una clase o
-          experiencia puntual. Vencen al mes de comprarlos.
+          experiencia puntual. Mínimo {MINIMO_CREDITOS_SUELTOS} créditos. Vencen al mes de
+          comprarlos.
         </Text>
 
         {!isLoaded ? (
@@ -140,8 +140,8 @@ export default function CreditosSueltosScreen() {
             <View style={styles.cantidadRow}>
               <Pressable
                 onPress={() => ajustarCantidad(-1)}
-                disabled={cantidad <= 1}
-                style={[styles.stepperButton, cantidad <= 1 && styles.buttonDisabled]}
+                disabled={cantidad <= MINIMO_CREDITOS_SUELTOS}
+                style={[styles.stepperButton, cantidad <= MINIMO_CREDITOS_SUELTOS && styles.buttonDisabled]}
               >
                 <Text style={styles.stepperButtonText}>−</Text>
               </Pressable>
@@ -151,14 +151,6 @@ export default function CreditosSueltosScreen() {
               </Pressable>
               <Text style={styles.totalText}>Total: {formatCOP(precio)}</Text>
             </View>
-
-            {cantidad < CARGO_OPERATIVO_UMBRAL_CREDITOS && (
-              <Text style={styles.nota}>
-                Las compras de 1-2 créditos incluyen un cargo operativo de{" "}
-                {formatCOP(CARGO_OPERATIVO_CREDITOS_SUELTOS)} (cubre el costo fijo de procesar pagos
-                chicos).
-              </Text>
-            )}
 
             <Text style={styles.label}>Número de tarjeta</Text>
             <TextInput
@@ -283,7 +275,6 @@ const styles = StyleSheet.create({
   stepperButtonText: { fontSize: 20, fontWeight: "700", color: "#063009" },
   cantidadText: { fontSize: 18, fontWeight: "800", color: "#063009", width: 32, textAlign: "center" },
   totalText: { fontSize: 16, fontWeight: "800", color: "#ff4f3f" },
-  nota: { fontSize: 12, color: "#06300999", marginBottom: 14 },
   acceptRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 4, marginBottom: 16 },
   acceptText: { flex: 1, fontSize: 12.5, color: "#063009" },
   linkText: { color: "#ff4f3f", fontWeight: "600" },

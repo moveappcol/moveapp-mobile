@@ -79,7 +79,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "¿Puedo comprar créditos sin plan?",
-    a: "Sí. Puedes comprar créditos sueltos a $8.000 cada uno, desde 1 crédito, para reservar esa clase o experiencia específica que quieres probar. Tienen vigencia de 1 mes. Si entrenas seguido, los planes te salen más baratos por crédito.",
+    a: "Sí. Puedes comprar créditos sueltos a $8.000 cada uno (mínimo 3 créditos), para reservar esa clase o experiencia específica que quieres probar. Tienen vigencia de 1 mes. Si entrenas seguido, los planes te salen más baratos por crédito.",
   },
   {
     q: "Tengo un gimnasio o estudio y quiero ser aliado de UNIQUE, ¿cómo hago?",
