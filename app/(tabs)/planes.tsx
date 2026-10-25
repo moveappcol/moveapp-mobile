@@ -60,6 +60,14 @@ export default function PlanesScreen() {
         </Pressable>
       </Link>
 
+      <Link href="/creditos-sueltos" asChild>
+        <Pressable style={styles.canjearLink}>
+          <Text style={styles.canjearLinkText}>
+            ¿Solo quieres probar algo puntual? Compra créditos sueltos →
+          </Text>
+        </Pressable>
+      </Link>
+
       {hasActivePlan && (
         <View style={styles.topupsSection}>
           <Text style={styles.topupsTitle}>Créditos adicionales</Text>
