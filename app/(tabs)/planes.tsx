@@ -1,36 +1,8 @@
-import { useAuth } from "@clerk/expo";
 import { Link } from "expo-router";
-import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { apiFetch } from "@/lib/api";
-import { getCached, setCached } from "@/lib/cache";
-import { CREDIT_PLANS, CREDIT_TOPUPS, formatCOP } from "@/lib/credits-pricing";
-
-const CACHE_KEY = "hasActivePlan";
-
-type PlanResponse =
-  | { hasSubscription: false }
-  | { hasSubscription: true; estado: string; plan: unknown; proximoCobro: string | null; planSiguiente: unknown };
+import { CREDIT_PLANS, formatCOP } from "@/lib/credits-pricing";
 
 export default function PlanesScreen() {
-  const { isLoaded, isSignedIn, getToken } = useAuth();
-  const [hasActivePlan, setHasActivePlan] = useState(() => getCached<boolean>(CACHE_KEY) ?? false);
-
-  useEffect(() => {
-    if (!isLoaded || !isSignedIn) return;
-    (async () => {
-      try {
-        const token = await getToken();
-        const plan = await apiFetch<PlanResponse>("/me/plan", token);
-        const active = plan.hasSubscription && plan.estado === "Activa";
-        setCached(CACHE_KEY, active);
-        setHasActivePlan(active);
-      } catch {
-        // dejamos el valor en caché (o false) tal como estaba
-      }
-    })();
-  }, [isLoaded, isSignedIn, getToken]);
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Planes</Text>
@@ -67,30 +39,6 @@ export default function PlanesScreen() {
           </Text>
         </Pressable>
       </Link>
-
-      {hasActivePlan && (
-        <View style={styles.topupsSection}>
-          <Text style={styles.topupsTitle}>Créditos adicionales</Text>
-          <Text style={styles.subtitle}>
-            ¿Se te acabaron los créditos antes de fin de mes? Suma más sin esperar a tu próximo
-            ciclo.
-          </Text>
-
-          <View style={styles.topupsList}>
-            {CREDIT_TOPUPS.map((topup) => (
-              <Link key={topup.id} href={`/creditos/${topup.id}`} asChild>
-                <Pressable style={styles.topupRow}>
-                  <View>
-                    <Text style={styles.topupLabel}>{topup.label}</Text>
-                    <Text style={styles.topupPrice}>{formatCOP(topup.price)}</Text>
-                  </View>
-                  <Text style={styles.topupButtonText}>Comprar</Text>
-                </Pressable>
-              </Link>
-            ))}
-          </View>
-        </View>
-      )}
 
       <Text style={styles.disclaimer}>
         Puedes cancelar las clases hasta 24h antes sin costo. Para promover la diversidad de la
@@ -139,30 +87,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   canjearLinkText: { fontSize: 13, fontWeight: "700", color: "#063009" },
-  topupsSection: { marginTop: 12 },
-  topupsTitle: { fontSize: 18, fontWeight: "700", color: "#063009" },
-  topupsList: { marginTop: 16, gap: 10 },
-  topupRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "#06300922",
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-  },
-  topupLabel: { fontSize: 14, fontWeight: "700", color: "#063009" },
-  topupPrice: { fontSize: 13, fontWeight: "700", color: "#ff4f3f", marginTop: 2 },
-  topupButtonText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#fff",
-    backgroundColor: "#063009",
-    borderRadius: 999,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    overflow: "hidden",
-  },
   disclaimer: { fontSize: 12, color: "#06300999", marginTop: 24, lineHeight: 18 },
 });

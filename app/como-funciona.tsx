@@ -2,7 +2,7 @@ import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BackButton } from "@/components/BackButton";
-import { CREDIT_PLANS, CREDIT_TOPUPS, formatCOP } from "@/lib/credits-pricing";
+import { CREDIT_PLANS, PRECIO_CREDITO_SUELTO, MINIMO_CREDITOS_SUELTOS, formatCOP } from "@/lib/credits-pricing";
 import { whatsappUrl } from "@/lib/whatsapp";
 
 type Step = { n: number; title: string; body: string[] };
@@ -168,15 +168,9 @@ export default function ComoFuncionaScreen() {
             ))}
           </View>
           <Text style={styles.paragraph}>
-            ¿Se te acabaron los créditos antes de fin de mes? Puedes comprar créditos adicionales
-            sin cambiar de plan:{" "}
-            {CREDIT_TOPUPS.map((t, i) => (
-              <Text key={t.id}>
-                {i > 0 && " · "}
-                {t.credits} créditos ({formatCOP(t.price)})
-              </Text>
-            ))}
-            .
+            ¿Se te acabaron los créditos antes de fin de mes, o solo quieres probar algo puntual?
+            Puedes comprar créditos sueltos a {formatCOP(PRECIO_CREDITO_SUELTO)} cada uno (mínimo{" "}
+            {MINIMO_CREDITOS_SUELTOS}), con o sin plan activo.
           </Text>
         </Section>
 
