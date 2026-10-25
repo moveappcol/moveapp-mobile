@@ -1,12 +1,25 @@
 import { Link } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { CREDIT_PLANS, formatCOP } from "@/lib/credits-pricing";
+import { CREDIT_PLANS, TRIAL_PLAN, formatCOP } from "@/lib/credits-pricing";
 
 export default function PlanesScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Planes</Text>
       <Text style={styles.subtitle}>Elige tu plan mensual de créditos.</Text>
+
+      <View style={styles.trialCard}>
+        <Text style={styles.trialTitle}>¿No estás seguro todavía?</Text>
+        <Text style={styles.trialBody}>
+          Prueba 1 semana por {formatCOP(TRIAL_PLAN.price)} — {TRIAL_PLAN.credits} créditos. Si no
+          cancelas, se activa tu plan Starter automáticamente.
+        </Text>
+        <Link href="/prueba" asChild>
+          <Pressable style={styles.trialButton}>
+            <Text style={styles.buttonText}>Empezar mi prueba</Text>
+          </Pressable>
+        </Link>
+      </View>
 
       {CREDIT_PLANS.map((plan) => (
         <View key={plan.id} style={styles.card}>
@@ -52,6 +65,23 @@ const styles = StyleSheet.create({
   container: { padding: 16, paddingBottom: 40 },
   title: { fontSize: 22, fontWeight: "800", color: "#063009" },
   subtitle: { fontSize: 14, color: "#06300999", marginTop: 4, marginBottom: 20 },
+  trialCard: {
+    borderWidth: 1,
+    borderColor: "#ff4f3f",
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 20,
+    backgroundColor: "#fff",
+  },
+  trialTitle: { fontSize: 16, fontWeight: "800", color: "#063009" },
+  trialBody: { fontSize: 13, color: "#06300999", marginTop: 4, lineHeight: 18 },
+  trialButton: {
+    marginTop: 12,
+    backgroundColor: "#ff4f3f",
+    borderRadius: 999,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
   card: {
     backgroundColor: "#063009",
     borderRadius: 20,

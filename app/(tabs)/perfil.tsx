@@ -31,12 +31,16 @@ type PlanResponse =
       planSiguiente: PlanInfo | null;
     };
 type CodigoReferidoResponse = { codigo: string | null; esInfluencer: boolean; creditosPorReferido: number };
+type PruebaResponse = {
+  prueba: { estado: "Activa" | "Cancelada"; fechaFin: string; creditos: number } | null;
+};
 type ScreenState = {
   loading: boolean;
   error: string | null;
   credits: CreditsResponse | null;
   plan: PlanResponse | null;
   codigoReferido: CodigoReferidoResponse | null;
+  prueba: PruebaResponse | null;
 };
 
 function GuestView() {
@@ -74,6 +78,7 @@ function SignedInView() {
     credits: CreditsResponse;
     plan: PlanResponse;
     codigoReferido?: CodigoReferidoResponse;
+    prueba?: PruebaResponse;
   }>(CACHE_KEY);
   const [state, setState] = useState<ScreenState>({
     loading: !cached,
@@ -81,10 +86,13 @@ function SignedInView() {
     credits: cached?.credits ?? null,
     plan: cached?.plan ?? null,
     codigoReferido: cached?.codigoReferido ?? null,
+    prueba: cached?.prueba ?? null,
   });
 
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [pruebaUpdating, setPruebaUpdating] = useState(false);
+  const [pruebaError, setPruebaError] = useState<string | null>(null);
   const [changingPlan, setChangingPlan] = useState(false);
   const [changePlanError, setChangePlanError] = useState<string | null>(null);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -93,13 +101,14 @@ function SignedInView() {
   const load = useCallback(async () => {
     try {
       const token = await getToken();
-      const [credits, plan, codigoReferido] = await Promise.all([
+      const [credits, plan, codigoReferido, prueba] = await Promise.all([
         apiFetch<CreditsResponse>("/me/credits", token),
         apiFetch<PlanResponse>("/me/plan", token),
         apiFetch<CodigoReferidoResponse>("/me/codigo-referido", token).catch(() => null),
+        apiFetch<PruebaResponse>("/prueba/estado", token).catch(() => null),
       ]);
-      setCached(CACHE_KEY, { credits, plan, codigoReferido });
-      setState({ loading: false, error: null, credits, plan, codigoReferido });
+      setCached(CACHE_KEY, { credits, plan, codigoReferido, prueba });
+      setState({ loading: false, error: null, credits, plan, codigoReferido, prueba });
     } catch {
       setState((prev) =>
         prev.credits
@@ -110,6 +119,7 @@ function SignedInView() {
               credits: null,
               plan: null,
               codigoReferido: null,
+              prueba: null,
             }
       );
     }
@@ -180,6 +190,34 @@ function SignedInView() {
         err instanceof Error ? err.message : "No pudimos eliminar tu cuenta. Intenta de nuevo."
       );
       setDeletingAccount(false);
+    }
+  }
+
+  async function cancelarPrueba() {
+    setPruebaUpdating(true);
+    setPruebaError(null);
+    try {
+      const token = await getToken();
+      await apiFetch("/prueba/cancelar", token, { method: "POST" });
+      await load();
+    } catch (err) {
+      setPruebaError(err instanceof Error ? err.message : "No pudimos cancelar tu prueba.");
+    } finally {
+      setPruebaUpdating(false);
+    }
+  }
+
+  async function reactivarPrueba() {
+    setPruebaUpdating(true);
+    setPruebaError(null);
+    try {
+      const token = await getToken();
+      await apiFetch("/prueba/reactivar", token, { method: "POST" });
+      await load();
+    } catch (err) {
+      setPruebaError(err instanceof Error ? err.message : "No pudimos reactivar tu prueba.");
+    } finally {
+      setPruebaUpdating(false);
     }
   }
 
@@ -286,6 +324,32 @@ function SignedInView() {
           ) : (
             <Text style={styles.planMeta}>Todavía no tienes un plan activo.</Text>
           )}
+        </View>
+      )}
+
+      {state.prueba?.prueba && (
+        <View style={styles.referralCard}>
+          <Text style={styles.referralTitle}>Prueba UNIQUE — 1 semana</Text>
+          <Text style={styles.referralBody}>{state.prueba.prueba.creditos} créditos restantes.</Text>
+          <Text style={styles.referralBody}>
+            {state.prueba.prueba.estado === "Cancelada"
+              ? `Cancelaste la renovación — tu acceso termina el ${state.prueba.prueba.fechaFin}, sin cobro después.`
+              : `El ${state.prueba.prueba.fechaFin} se activa tu plan Starter ($209.900/mes).`}
+          </Text>
+          <Pressable
+            style={styles.cancelPlanButton}
+            onPress={state.prueba.prueba.estado === "Cancelada" ? reactivarPrueba : cancelarPrueba}
+            disabled={pruebaUpdating}
+          >
+            {pruebaUpdating ? (
+              <ActivityIndicator color="#ff4f3f" size="small" />
+            ) : (
+              <Text style={styles.cancelPlanText}>
+                {state.prueba.prueba.estado === "Cancelada" ? "Reactivar renovación" : "Cancelar renovación"}
+              </Text>
+            )}
+          </Pressable>
+          {pruebaError && <Text style={styles.cancelPlanError}>{pruebaError}</Text>}
         </View>
       )}
 

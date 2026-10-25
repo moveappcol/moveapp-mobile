@@ -17,6 +17,18 @@ export function precioCreditosSueltos(cantidad: number): number {
   return cantidad * PRECIO_CREDITO_SUELTO;
 }
 
+/** Prueba UNIQUE de 1 semana: mismo TRIAL_PLAN que el repo web
+ * (src/lib/credits-pricing.ts) — mantener sincronizado si cambia. */
+export const TRIAL_PLAN: CreditPlan = {
+  id: "trial-1semana",
+  name: "Prueba UNIQUE",
+  label: "16 créditos",
+  credits: 16,
+  price: 69_000,
+};
+export const TRIAL_DURATION_DAYS = 7;
+export const STARTER_PLAN_PRICE = 209_900;
+
 export function formatCOP(value: number): string {
   return new Intl.NumberFormat("es-CO", {
     style: "currency",
