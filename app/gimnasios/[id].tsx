@@ -3,6 +3,7 @@ import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   Image,
   Modal,
@@ -422,6 +423,10 @@ export default function GymDetailScreen() {
         <Text style={styles.limiteMensual}>
           Puedes reservar en este gimnasio un máximo de 3 veces al mes.
         </Text>
+        <Text style={styles.limiteMensual}>
+          Los gimnasios pueden cancelar una clase si no logran llenar el aforo mínimo, avisando con al
+          menos 24 horas de anticipación.
+        </Text>
 
         {classes.length === 0 && (
           <Text style={styles.subtitle}>Este gimnasio todavía no tiene clases programadas.</Text>
@@ -675,7 +680,16 @@ export default function GymDetailScreen() {
                   />
                   <Pressable
                     disabled={book?.loading || book?.ok}
-                    onPress={() => reservar(clase.id)}
+                    onPress={() =>
+                      Alert.alert(
+                        "¿Quieres confirmar tu reserva?",
+                        `Vas a reservar "${clase.name}" por ${precioEfectivo(clase)} créditos.`,
+                        [
+                          { text: "Cancelar", style: "cancel" },
+                          { text: "Confirmar", onPress: () => reservar(clase.id) },
+                        ]
+                      )
+                    }
                     style={[styles.button, book?.ok && styles.buttonDisabled]}
                   >
                     {book?.loading ? (

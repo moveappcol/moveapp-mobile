@@ -45,13 +45,17 @@ export default function PlanesScreen() {
         </Pressable>
       </Link>
 
-      <Link href="/creditos-sueltos" asChild>
-        <Pressable style={styles.canjearLink}>
-          <Text style={styles.canjearLinkText}>
-            ¿Solo quieres probar algo puntual? Compra créditos sueltos →
-          </Text>
-        </Pressable>
-      </Link>
+      <View style={styles.sueltosCard}>
+        <Text style={styles.sueltosTitle}>¿Quieres solo un crédito puntual?</Text>
+        <Text style={styles.sueltosBody}>
+          Compra créditos sueltos sin plan, para esa clase o experiencia que quieres probar.
+        </Text>
+        <Link href="/creditos-sueltos" asChild>
+          <Pressable style={styles.sueltosButton}>
+            <Text style={styles.sueltosButtonText}>Comprar créditos sueltos</Text>
+          </Pressable>
+        </Link>
+      </View>
 
       <Text style={styles.disclaimer}>
         Puedes cancelar las clases hasta 24h antes sin costo. Para promover la diversidad de la
@@ -117,5 +121,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   canjearLinkText: { fontSize: 13, fontWeight: "700", color: "#063009" },
+  sueltosCard: {
+    borderWidth: 1,
+    borderColor: "#06300922",
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 20,
+    backgroundColor: "#fff",
+  },
+  sueltosTitle: { fontSize: 16, fontWeight: "800", color: "#063009" },
+  sueltosBody: { fontSize: 13, color: "#06300999", marginTop: 4, lineHeight: 18 },
+  sueltosButton: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#063009",
+    borderRadius: 999,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  sueltosButtonText: { color: "#063009", fontSize: 14, fontWeight: "700" },
   disclaimer: { fontSize: 12, color: "#06300999", marginTop: 24, lineHeight: 18 },
 });
