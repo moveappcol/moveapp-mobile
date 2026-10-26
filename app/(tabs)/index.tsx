@@ -204,6 +204,16 @@ export default function GimnasiosScreen() {
           : "Mira qué clases hay cada día en toda la red"}
       </Text>
 
+      <Link href="/prueba" asChild>
+        <Pressable style={styles.trialBanner}>
+          <Text style={styles.trialBannerBadge}>NUEVO</Text>
+          <Text style={styles.trialBannerTitle}>Prueba UNIQUE · 1 semana</Text>
+          <Text style={styles.trialBannerBody}>
+            16 créditos por $69.000 — empieza hoy mismo
+          </Text>
+        </Pressable>
+      </Link>
+
       <View style={styles.modeToggle}>
         <Pressable
           onPress={() => setModo("gimnasio")}
@@ -394,6 +404,28 @@ const styles = StyleSheet.create({
   wordmark: { fontSize: 15, fontWeight: "700", color: "#063009" },
   title: { fontSize: 20, fontWeight: "800", color: "#063009", marginTop: 10 },
   subtitle: { fontSize: 13, color: "#06300999", marginTop: 4 },
+  trialBanner: {
+    marginTop: 16,
+    backgroundColor: "#063009",
+    borderRadius: 18,
+    padding: 16,
+    overflow: "hidden",
+  },
+  trialBannerBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#d4ff3f",
+    color: "#063009",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+    borderRadius: 999,
+    paddingVertical: 3,
+    paddingHorizontal: 9,
+    marginBottom: 8,
+    overflow: "hidden",
+  },
+  trialBannerTitle: { fontSize: 17, fontWeight: "800", color: "#fff" },
+  trialBannerBody: { fontSize: 13, color: "#ffffffbf", marginTop: 4 },
   modeToggle: {
     flexDirection: "row",
     alignSelf: "flex-start",
