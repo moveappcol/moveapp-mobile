@@ -528,6 +528,14 @@ export default function GymDetailScreen() {
                   <Text style={styles.buttonOutlineText}>Completar perfil</Text>
                 </Pressable>
               )}
+              {book?.code === "experiencia_requiere_plan" && (
+                <Pressable
+                  style={[styles.button, styles.buttonOutline]}
+                  onPress={() => router.push("/(tabs)/planes")}
+                >
+                  <Text style={styles.buttonOutlineText}>Ver planes</Text>
+                </Pressable>
+              )}
               {book?.ok && !book?.dismissed && (
                 <Modal transparent animationType="fade" visible>
                   <View style={styles.modalOverlay}>
