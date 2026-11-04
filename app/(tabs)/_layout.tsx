@@ -1,7 +1,7 @@
 import { useAuth } from "@clerk/expo";
 import { Link, Tabs, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 import { TabIcon } from "@/components/TabIcon";
 import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
@@ -70,13 +70,6 @@ export default function TabsLayout() {
     getCached<{ credits: CreditsResponse }>("perfil")?.credits.credits ?? null
   );
 
-  // Debug push: sin filtro de isLoaded/isSignedIn a propósito — para ver el
-  // valor real en cada cambio, incluido el primero, y confirmar si el
-  // problema es que esta pantalla nunca llega a verte como conectada.
-  useEffect(() => {
-    Alert.alert("Debug push", `isLoaded=${String(isLoaded)} isSignedIn=${String(isSignedIn)}`);
-  }, [isLoaded, isSignedIn]);
-
   // Vuelve a pedir el saldo cada vez que se regresa a las pestañas (ej. al
   // canjear un regalo o un cupón en /canjear, que vive fuera de este grupo
   // de rutas) — sin esto, la insignia del header se quedaba con el número
@@ -119,31 +112,22 @@ export default function TabsLayout() {
     })();
   }, [isLoaded, isSignedIn, getToken]);
 
-  // Debug push: aparte del efecto de arriba a propósito — ese bloque tiene
-  // un try/catch que silencia cualquier error ANTES de llegar a registrar
-  // el push (ver comentario "si falla la verificación..."), así que si algo
+  // Separado del efecto de arriba a propósito — ese bloque tiene un
+  // try/catch que silencia cualquier error ANTES de llegar a registrar el
+  // push (ver comentario "si falla la verificación..."), así que si algo
   // ahí fallaba, el registro de push nunca se intentaba y no quedaba
   // ningún rastro. Separado, nada más lo puede tapar.
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
-    Alert.alert("Debug push", "Efecto de push arrancó.");
     (async () => {
       const token = await getToken();
-      registerForPushNotificationsAsync()
-        .then((pushToken) => {
-          if (!pushToken) {
-            Alert.alert("Debug push", "registerForPushNotificationsAsync devolvió null (sin token).");
-            return;
-          }
-          apiFetch("/push-token", token, { method: "POST", body: { token: pushToken } })
-            .then(() => Alert.alert("Debug push", `Token guardado OK: ${pushToken.slice(0, 30)}...`))
-            .catch((err) =>
-              Alert.alert("Debug push", `Falló guardar el token: ${err instanceof Error ? err.message : String(err)}`)
-            );
-        })
-        .catch((err) =>
-          Alert.alert("Debug push", `registerForPushNotificationsAsync lanzó: ${err instanceof Error ? err.message : String(err)}`)
-        );
+      registerForPushNotificationsAsync().then((pushToken) => {
+        if (pushToken) {
+          apiFetch("/push-token", token, { method: "POST", body: { token: pushToken } }).catch(
+            () => {}
+          );
+        }
+      });
     })();
   }, [isLoaded, isSignedIn, getToken]);
 
