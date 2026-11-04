@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import { Alert, Platform } from "react-native";
+import { Platform } from "react-native";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -16,10 +16,7 @@ Notifications.setNotificationHandler({
  * null si la persona no dio permiso o está en un simulador (los push no
  * funcionan ahí). Nunca lanza. */
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
-  if (!Device.isDevice) {
-    Alert.alert("Debug push", "Device.isDevice es false.");
-    return null;
-  }
+  if (!Device.isDevice) return null;
 
   try {
     if (Platform.OS === "android") {
@@ -37,18 +34,14 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
       const requested = await Notifications.requestPermissionsAsync();
       status = requested.status;
     }
-    if (status !== "granted") {
-      Alert.alert("Debug push", `Permiso no concedido: ${status}`);
-      return null;
-    }
+    if (status !== "granted") return null;
 
     const projectId = Constants.expoConfig?.extra?.eas?.projectId;
     const { data } = await Notifications.getExpoPushTokenAsync(
       projectId ? { projectId } : undefined
     );
     return data;
-  } catch (err) {
-    Alert.alert("Debug push", `Excepción pidiendo el token: ${err instanceof Error ? err.message : String(err)}`);
+  } catch {
     return null;
   }
 }
