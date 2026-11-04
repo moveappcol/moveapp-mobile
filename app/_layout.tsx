@@ -3,6 +3,7 @@ import { tokenCache } from "@clerk/expo/token-cache";
 import { Stack, usePathname, useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
+import * as Updates from "expo-updates";
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -51,10 +52,49 @@ function ResetToGymsOnForeground() {
   return null;
 }
 
+/** Por defecto expo-updates baja la actualización en segundo plano y solo
+ * la aplica en un arranque posterior — un arreglo urgente podía tardar
+ * varias aperturas en llegarle a la gente. Aquí, al abrir la app y al
+ * volver de segundo plano, buscamos si hay una nueva y la aplicamos de una
+ * vez (salvo a mitad de una reserva o pago, para no cortarle nada). */
+async function applyPendingUpdate() {
+  if (__DEV__ || !Updates.isEnabled) return;
+  try {
+    const check = await Updates.checkForUpdateAsync();
+    if (!check.isAvailable) return;
+    await Updates.fetchUpdateAsync();
+    await Updates.reloadAsync();
+  } catch {
+    // sin red o falla de Expo: se queda con la versión que ya tiene
+  }
+}
+
+function ApplyUpdatesOnOpen() {
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
+  useEffect(() => {
+    applyPendingUpdate();
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active" && !isProtectedPath(pathnameRef.current)) {
+        applyPendingUpdate();
+      }
+    });
+    return () => subscription.remove();
+  }, []);
+
+  return null;
+}
+
 export default function RootLayout() {
   return (
     <ClerkProvider publishableKey={publishableKey!} tokenCache={tokenCache}>
       <ResetToGymsOnForeground />
+      <ApplyUpdatesOnOpen />
       <Stack screenOptions={{ headerShown: false }} />
     </ClerkProvider>
   );
