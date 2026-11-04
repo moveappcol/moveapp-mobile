@@ -1,7 +1,7 @@
 import { useAuth } from "@clerk/expo";
 import { Link, Tabs, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Alert, Pressable, StyleSheet, Text } from "react-native";
 import { TabIcon } from "@/components/TabIcon";
 import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
@@ -106,13 +106,21 @@ export default function TabsLayout() {
             );
           }
         });
-        registerForPushNotificationsAsync().then((pushToken) => {
-          if (pushToken) {
-            apiFetch("/push-token", token, { method: "POST", body: { token: pushToken } }).catch(
-              () => {}
-            );
-          }
-        });
+        registerForPushNotificationsAsync()
+          .then((pushToken) => {
+            if (!pushToken) {
+              Alert.alert("Debug push", "registerForPushNotificationsAsync devolvió null (sin token).");
+              return;
+            }
+            apiFetch("/push-token", token, { method: "POST", body: { token: pushToken } })
+              .then(() => Alert.alert("Debug push", `Token guardado OK: ${pushToken.slice(0, 30)}...`))
+              .catch((err) =>
+                Alert.alert("Debug push", `Falló guardar el token: ${err instanceof Error ? err.message : String(err)}`)
+              );
+          })
+          .catch((err) =>
+            Alert.alert("Debug push", `registerForPushNotificationsAsync lanzó: ${err instanceof Error ? err.message : String(err)}`)
+          );
       } catch {
         // si falla la verificación, dejamos seguir — no bloqueamos por un error de red
       }
