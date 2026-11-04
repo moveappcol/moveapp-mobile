@@ -70,6 +70,13 @@ export default function TabsLayout() {
     getCached<{ credits: CreditsResponse }>("perfil")?.credits.credits ?? null
   );
 
+  // Debug push: sin filtro de isLoaded/isSignedIn a propósito — para ver el
+  // valor real en cada cambio, incluido el primero, y confirmar si el
+  // problema es que esta pantalla nunca llega a verte como conectada.
+  useEffect(() => {
+    Alert.alert("Debug push", `isLoaded=${String(isLoaded)} isSignedIn=${String(isSignedIn)}`);
+  }, [isLoaded, isSignedIn]);
+
   // Vuelve a pedir el saldo cada vez que se regresa a las pestañas (ej. al
   // canjear un regalo o un cupón en /canjear, que vive fuera de este grupo
   // de rutas) — sin esto, la insignia del header se quedaba con el número
