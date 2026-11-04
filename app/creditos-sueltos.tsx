@@ -26,9 +26,10 @@ type Config = { wompiPublicKey: string; permalinkAcceptance: string; permalinkPe
 type BuyResult = { ok: true; credits: number } | { ok: false; error: string; pending?: boolean };
 
 /** Compra de créditos sueltos, sin plan — para quien solo quiere probar una
- * clase o experiencia puntual (ver chargeCreditosSueltos en el backend).
- * A diferencia de planes/[id].tsx, no hay plan ni cupón: solo una cantidad
- * y una tarjeta. */
+ * clase puntual (ver chargeCreditosSueltos en el backend). No sirven para
+ * reservar Experiencias (ver esGimnasioDeExperiencias en reservations.ts,
+ * que exige una Suscripcion Activa real). A diferencia de planes/[id].tsx,
+ * no hay plan ni cupón: solo una cantidad y una tarjeta. */
 export default function CreditosSueltosScreen() {
   const router = useRouter();
   const { isLoaded, isSignedIn, getToken } = useAuth();
@@ -114,9 +115,11 @@ export default function CreditosSueltosScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Créditos sueltos</Text>
         <Text style={styles.subtitle}>
-          {formatCOP(PRECIO_CREDITO_SUELTO)} por crédito, sin plan — ideal para probar una clase o
-          experiencia puntual. Mínimo {MINIMO_CREDITOS_SUELTOS} créditos. Vencen al mes de
-          comprarlos.
+          {formatCOP(PRECIO_CREDITO_SUELTO)} por crédito, sin plan — ideal para probar una clase
+          puntual. Mínimo {MINIMO_CREDITOS_SUELTOS} créditos. Vencen al mes de comprarlos.
+        </Text>
+        <Text style={styles.noExperienciasText}>
+          Solo sirven para reservar clases regulares — no para Experiencias.
         </Text>
 
         {!isLoaded ? (
@@ -246,6 +249,7 @@ const styles = StyleSheet.create({
   container: { padding: 16, paddingBottom: 40 },
   title: { fontSize: 22, fontWeight: "800", color: "#063009" },
   subtitle: { fontSize: 14, color: "#06300999", marginTop: 6 },
+  noExperienciasText: { fontSize: 12, color: "#06300980", marginTop: 4 },
   guestBox: { marginTop: 24, width: "100%" },
   form: { marginTop: 24 },
   label: { fontSize: 13, fontWeight: "600", color: "#063009" },

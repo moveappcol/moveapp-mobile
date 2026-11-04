@@ -48,7 +48,10 @@ export default function PlanesScreen() {
       <View style={styles.sueltosCard}>
         <Text style={styles.sueltosTitle}>¿Quieres solo un crédito puntual?</Text>
         <Text style={styles.sueltosBody}>
-          Compra créditos sueltos sin plan, para esa clase o experiencia que quieres probar.
+          Compra créditos sueltos sin plan, para esa clase que quieres probar.
+        </Text>
+        <Text style={styles.sueltosDisclaimer}>
+          Solo sirven para clases regulares, no para Experiencias.
         </Text>
         <Link href="/creditos-sueltos" asChild>
           <Pressable style={styles.sueltosButton}>
@@ -131,6 +134,7 @@ const styles = StyleSheet.create({
   },
   sueltosTitle: { fontSize: 16, fontWeight: "800", color: "#063009" },
   sueltosBody: { fontSize: 13, color: "#06300999", marginTop: 4, lineHeight: 18 },
+  sueltosDisclaimer: { fontSize: 11, color: "#06300980", marginTop: 6 },
   sueltosButton: {
     marginTop: 12,
     borderWidth: 1,
