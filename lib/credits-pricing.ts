@@ -6,6 +6,17 @@ export const CREDIT_PLANS: CreditPlan[] = [
   { id: "plan-volume", name: "Volume", label: "100 créditos", credits: 100, price: 569_900 },
 ];
 
+/** Mismo cálculo que ahorroPorcentaje en el repo web
+ * (src/lib/credits-pricing.ts) — mantener sincronizado si cambia. Precio
+ * de referencia de mercado: lo que costaría pagar cada clase suelta en el
+ * gimnasio, sin plan. */
+export const PRECIO_CLASE_SUELTA_POR_CREDITO = 10_000;
+
+export function ahorroPorcentaje(plan: CreditPlan): number {
+  const precioPorCreditoPlan = plan.price / plan.credits;
+  return Math.round((1 - precioPorCreditoPlan / PRECIO_CLASE_SUELTA_POR_CREDITO) * 100);
+}
+
 /** Créditos sueltos: mismo cálculo que precioCreditosSueltos en el repo
  * web (src/lib/credits-pricing.ts) — mantener sincronizado si cambia.
  * Mínimo de 3 créditos (no desde 1): precio siempre exacto, sin cargo

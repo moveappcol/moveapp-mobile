@@ -1,6 +1,6 @@
 import { Link } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { CREDIT_PLANS, TRIAL_PLAN, formatCOP } from "@/lib/credits-pricing";
+import { CREDIT_PLANS, TRIAL_PLAN, formatCOP, ahorroPorcentaje } from "@/lib/credits-pricing";
 
 export default function PlanesScreen() {
   return (
@@ -26,6 +26,9 @@ export default function PlanesScreen() {
           <Text style={styles.cardTitle}>{plan.name}</Text>
           <Text style={styles.cardSubtitle}>{plan.label}</Text>
           <Text style={styles.price}>{formatCOP(plan.price)}/mes</Text>
+          <Text style={styles.ahorras}>
+            Ahorras ~{ahorroPorcentaje(plan)}% vs. clase suelta en el gimnasio
+          </Text>
           <Link href={`/planes/${plan.id}`} asChild>
             <Pressable style={styles.button}>
               <Text style={styles.buttonText}>Suscribirme</Text>
@@ -104,6 +107,7 @@ const styles = StyleSheet.create({
   },
   cardSubtitle: { fontSize: 16, fontWeight: "700", color: "#fff", marginTop: 4 },
   price: { fontSize: 22, fontWeight: "800", color: "#fff", marginTop: 10 },
+  ahorras: { fontSize: 12, fontWeight: "600", color: "#ffffffb3", marginTop: 4 },
   button: {
     marginTop: 16,
     backgroundColor: "#ff4f3f",
