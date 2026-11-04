@@ -106,24 +106,37 @@ export default function TabsLayout() {
             );
           }
         });
-        registerForPushNotificationsAsync()
-          .then((pushToken) => {
-            if (!pushToken) {
-              Alert.alert("Debug push", "registerForPushNotificationsAsync devolvió null (sin token).");
-              return;
-            }
-            apiFetch("/push-token", token, { method: "POST", body: { token: pushToken } })
-              .then(() => Alert.alert("Debug push", `Token guardado OK: ${pushToken.slice(0, 30)}...`))
-              .catch((err) =>
-                Alert.alert("Debug push", `Falló guardar el token: ${err instanceof Error ? err.message : String(err)}`)
-              );
-          })
-          .catch((err) =>
-            Alert.alert("Debug push", `registerForPushNotificationsAsync lanzó: ${err instanceof Error ? err.message : String(err)}`)
-          );
       } catch {
         // si falla la verificación, dejamos seguir — no bloqueamos por un error de red
       }
+    })();
+  }, [isLoaded, isSignedIn, getToken]);
+
+  // Debug push: aparte del efecto de arriba a propósito — ese bloque tiene
+  // un try/catch que silencia cualquier error ANTES de llegar a registrar
+  // el push (ver comentario "si falla la verificación..."), así que si algo
+  // ahí fallaba, el registro de push nunca se intentaba y no quedaba
+  // ningún rastro. Separado, nada más lo puede tapar.
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+    Alert.alert("Debug push", "Efecto de push arrancó.");
+    (async () => {
+      const token = await getToken();
+      registerForPushNotificationsAsync()
+        .then((pushToken) => {
+          if (!pushToken) {
+            Alert.alert("Debug push", "registerForPushNotificationsAsync devolvió null (sin token).");
+            return;
+          }
+          apiFetch("/push-token", token, { method: "POST", body: { token: pushToken } })
+            .then(() => Alert.alert("Debug push", `Token guardado OK: ${pushToken.slice(0, 30)}...`))
+            .catch((err) =>
+              Alert.alert("Debug push", `Falló guardar el token: ${err instanceof Error ? err.message : String(err)}`)
+            );
+        })
+        .catch((err) =>
+          Alert.alert("Debug push", `registerForPushNotificationsAsync lanzó: ${err instanceof Error ? err.message : String(err)}`)
+        );
     })();
   }, [isLoaded, isSignedIn, getToken]);
 
