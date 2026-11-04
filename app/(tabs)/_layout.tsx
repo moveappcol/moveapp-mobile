@@ -1,7 +1,7 @@
 import { useAuth } from "@clerk/expo";
 import { Link, Tabs, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Alert, Pressable, StyleSheet, Text } from "react-native";
 import { TabIcon } from "@/components/TabIcon";
 import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
@@ -121,13 +121,20 @@ export default function TabsLayout() {
     if (!isLoaded || !isSignedIn) return;
     (async () => {
       const token = await getToken();
-      registerForPushNotificationsAsync().then((pushToken) => {
-        if (pushToken) {
-          apiFetch("/push-token", token, { method: "POST", body: { token: pushToken } }).catch(
-            () => {}
-          );
-        }
-      });
+      const pushToken = await registerForPushNotificationsAsync();
+      if (!pushToken) {
+        Alert.alert("Debug push", "registerForPushNotificationsAsync devolvió null.");
+        return;
+      }
+      try {
+        await apiFetch("/push-token", token, { method: "POST", body: { token: pushToken } });
+        Alert.alert("Debug push", `Guardado OK: ${pushToken.slice(0, 25)}...`);
+      } catch (err) {
+        Alert.alert(
+          "Debug push",
+          `Falló /push-token: ${err instanceof Error ? err.message : String(err)}`
+        );
+      }
     })();
   }, [isLoaded, isSignedIn, getToken]);
 
