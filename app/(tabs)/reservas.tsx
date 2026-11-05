@@ -1,6 +1,6 @@
 import { useAuth } from "@clerk/expo";
-import { Link } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { Link, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { apiFetch } from "@/lib/api";
 import { getCached, setCached } from "@/lib/cache";
@@ -151,9 +151,15 @@ function ReservationsList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Cada vez que se entra a la pestaña, no solo la primera vez — las
+  // pestañas quedan montadas, así que con un useEffect la lista se quedaba
+  // con lo que había al abrirla (o con la caché vacía que deja el layout al
+  // iniciar sesión) y una reserva hecha después no aparecía aquí.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   function confirmarYCancelar(item: ReservationEntry) {
     const hoursUntilClass = item.fecha
