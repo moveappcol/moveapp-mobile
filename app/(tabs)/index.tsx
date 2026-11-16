@@ -16,7 +16,6 @@ import { distanceKm } from "@/lib/geo";
 import { Skeleton } from "@/components/Skeleton";
 import { useFavorites } from "@/lib/favorites";
 import ClassesByDayExplorer from "@/components/ClassesByDayExplorer";
-import BlackFridayBanner from "@/components/BlackFridayBanner";
 import { esGimnasioDeExperiencias } from "@/lib/gyms";
 
 const CACHE_KEY = "gyms";
@@ -325,7 +324,6 @@ export default function GimnasiosScreen() {
   if (modo === "dia") {
     return (
       <ScrollView contentContainerStyle={styles.container}>
-        <BlackFridayBanner />
         {topHeader}
         <ClassesByDayExplorer />
       </ScrollView>
@@ -334,7 +332,6 @@ export default function GimnasiosScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <BlackFridayBanner />
       {topHeader}
       {gymFilters}
 

@@ -8,12 +8,10 @@ import {
   bonoBlackFridayPorcentaje,
   creditosCompraPlan,
 } from "@/lib/credits-pricing";
-import BlackFridayBanner from "@/components/BlackFridayBanner";
 
 export default function PlanesScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <BlackFridayBanner />
       <Text style={styles.title}>Planes</Text>
       <Text style={styles.subtitle}>Elige tu plan mensual de créditos.</Text>
 
