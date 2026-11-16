@@ -1,10 +1,19 @@
 import { Link } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { CREDIT_PLANS, TRIAL_PLAN, formatCOP, ahorroPorcentaje } from "@/lib/credits-pricing";
+import {
+  CREDIT_PLANS,
+  TRIAL_PLAN,
+  formatCOP,
+  ahorroPorcentaje,
+  bonoBlackFridayPorcentaje,
+  creditosCompraPlan,
+} from "@/lib/credits-pricing";
+import BlackFridayBanner from "@/components/BlackFridayBanner";
 
 export default function PlanesScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <BlackFridayBanner />
       <Text style={styles.title}>Planes</Text>
       <Text style={styles.subtitle}>Elige tu plan mensual de créditos.</Text>
 
@@ -24,7 +33,16 @@ export default function PlanesScreen() {
       {CREDIT_PLANS.map((plan) => (
         <View key={plan.id} style={styles.card}>
           <Text style={styles.cardTitle}>{plan.name}</Text>
-          <Text style={styles.cardSubtitle}>{plan.label}</Text>
+          {bonoBlackFridayPorcentaje(plan.id) > 0 ? (
+            <Text style={styles.cardSubtitle}>
+              <Text style={{ textDecorationLine: "line-through" }}>{plan.label}</Text>{" "}
+              <Text style={{ fontWeight: "800", color: "#FF4F3F" }}>
+                {creditosCompraPlan(plan)} créditos · Black Friday +{bonoBlackFridayPorcentaje(plan.id)}%
+              </Text>
+            </Text>
+          ) : (
+            <Text style={styles.cardSubtitle}>{plan.label}</Text>
+          )}
           <Text style={styles.price}>{formatCOP(plan.price)}/mes</Text>
           <Text style={styles.ahorras}>
             Ahorras ~{ahorroPorcentaje(plan)}% vs. clase suelta en el gimnasio

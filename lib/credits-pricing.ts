@@ -47,3 +47,26 @@ export function formatCOP(value: number): string {
     maximumFractionDigits: 0,
   }).format(value);
 }
+
+/** Black Friday 2026 (20 y 21 de nov, hora Colombia): mismo cálculo que
+ * creditosCompraPlan en el repo web (src/lib/credits-pricing.ts) — allá es
+ * donde de verdad se acreditan; acá solo se muestra. Solo aplica a la
+ * compra de un plan nuevo, no a las renovaciones. */
+export const BLACK_FRIDAY = {
+  inicio: new Date("2026-11-20T00:00:00-05:00"),
+  fin: new Date("2026-11-22T00:00:00-05:00"),
+  bonoPorPlan: { "plan-starter": 0.2, "plan-balance": 0.15, "plan-volume": 0.15 } as Record<string, number>,
+};
+
+export function esBlackFriday(ahora: Date = new Date()): boolean {
+  return ahora >= BLACK_FRIDAY.inicio && ahora < BLACK_FRIDAY.fin;
+}
+
+export function bonoBlackFridayPorcentaje(planId: string, ahora: Date = new Date()): number {
+  if (!esBlackFriday(ahora)) return 0;
+  return Math.round((BLACK_FRIDAY.bonoPorPlan[planId] ?? 0) * 100);
+}
+
+export function creditosCompraPlan(plan: CreditPlan, ahora: Date = new Date()): number {
+  return Math.round(plan.credits * (1 + bonoBlackFridayPorcentaje(plan.id, ahora) / 100));
+}

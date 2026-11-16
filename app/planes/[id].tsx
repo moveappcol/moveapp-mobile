@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { apiFetch } from "@/lib/api";
 import { BackButton } from "@/components/BackButton";
-import { CREDIT_PLANS, formatCOP } from "@/lib/credits-pricing";
+import { CREDIT_PLANS, formatCOP, bonoBlackFridayPorcentaje, creditosCompraPlan } from "@/lib/credits-pricing";
 import { tokenizeCard } from "@/lib/wompi";
 
 type Config = { wompiPublicKey: string; permalinkAcceptance: string; permalinkPersonalAuth: string };
@@ -217,6 +217,11 @@ export default function PlanCheckoutScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>{plan.name}</Text>
         <Text style={styles.subtitle}>{plan.label}</Text>
+        {bonoBlackFridayPorcentaje(plan.id) > 0 && (
+          <Text style={{ backgroundColor: "#063009", color: "#fff", fontWeight: "700", padding: 12, borderRadius: 14, marginBottom: 12, overflow: "hidden" }}>
+            🖤 Black Friday: este mes recibes <Text style={{ color: "#D4FF3F" }}>{creditosCompraPlan(plan)} créditos</Text> en vez de {plan.credits} (+{bonoBlackFridayPorcentaje(plan.id)}%). Desde la siguiente renovación vuelve a {plan.credits}.
+          </Text>
+        )}
         {discountedPrice !== null ? (
           <View style={styles.priceRow}>
             <Text style={styles.priceStrikethrough}>{formatCOP(plan.price)}</Text>
