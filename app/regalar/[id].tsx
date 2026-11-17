@@ -30,6 +30,18 @@ type GiftChargeResult =
   | { ok: true; codigo: string | null }
   | { ok: false; error: string; pending?: boolean };
 
+function fechaLarga(d: Date): string {
+  return d.toLocaleDateString("es-CO", { timeZone: "America/Bogota", day: "numeric", month: "long", year: "numeric" });
+}
+
+/** Mismo cálculo que FechaLimite en el servidor (regalos.ts): 6 meses
+ * desde el día de la compra. */
+function seisMesesDespues(d: Date): Date {
+  const r = new Date(d);
+  r.setMonth(r.getMonth() + 6);
+  return r;
+}
+
 export default function RegalarCheckoutScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -161,7 +173,10 @@ export default function RegalarCheckoutScreen() {
               {plan.name} · {meses === 1 ? "1 mes" : `${meses} meses`}
             </Text>
             <Text style={styles.voucherCode}>{codigo}</Text>
-            <Text style={styles.voucherNote}>Válido por 6 meses desde hoy, el día de la compra.</Text>
+            <Text style={styles.voucherNote}>
+              Comprado el {fechaLarga(new Date())}
+              {"\n"}Válido hasta el {fechaLarga(seisMesesDespues(new Date()))} (6 meses desde la compra)
+            </Text>
           </View>
 
           <Pressable style={styles.button} onPress={compartirCodigo}>
@@ -433,5 +448,5 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginTop: 10,
   },
-  voucherNote: { color: "#ffffff99", fontSize: 12, marginTop: 10 },
+  voucherNote: { color: "#ffffffcc", fontSize: 12.5, marginTop: 10, textAlign: "center", lineHeight: 18 },
 });
