@@ -20,7 +20,7 @@ export default function NavidadCard() {
       <Text style={styles.title}>
         Esta Navidad, regala <Text style={styles.lime}>UNIQUE</Text>
       </Text>
-      <Text style={styles.body}>1, 2 o 3 meses de clases y experiencias.{"\n"}Virtual al correo o física en Bogotá.</Text>
+      <Text style={styles.body}>1, 2 o 3 meses de clases y experiencias.</Text>
       <Link href="/regalar/plan-starter" asChild>
         <Pressable style={styles.cta}>
           <Text style={styles.ctaText}>Regalar UNIQUE 🎁</Text>
