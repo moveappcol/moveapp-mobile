@@ -2,7 +2,7 @@ import { Link } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { esNavidad } from "@/lib/credits-pricing";
 
-/** Tarjeta de Navidad (23 nov – 31 dic) arriba de Inicio y Planes: invita a
+/** Tarjeta de Navidad (22 nov – 31 dic) arriba de Inicio y Planes: invita a
  * regalar UNIQUE. Llena de regalos y moños; desaparece sola el 1 de enero. */
 export default function NavidadCard() {
   if (!esNavidad()) return null;

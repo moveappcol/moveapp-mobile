@@ -71,11 +71,11 @@ export function creditosCompraPlan(plan: CreditPlan, ahora: Date = new Date()): 
   return Math.round(plan.credits * (1 + bonoBlackFridayPorcentaje(plan.id, ahora) / 100));
 }
 
-/** Temporada de Navidad (23 nov – 31 dic, hora Colombia) y tarjeta de
+/** Temporada de Navidad (22 nov – 31 dic, hora Colombia) y tarjeta de
  * regalo — mismos valores que en el repo web (src/lib/credits-pricing.ts),
  * donde de verdad se calcula y se cobra; acá solo se muestra. */
 export const NAVIDAD = {
-  inicio: new Date("2026-11-23T00:00:00-05:00"),
+  inicio: new Date("2026-11-22T00:00:00-05:00"),
   fin: new Date("2027-01-01T00:00:00-05:00"),
 };
 
