@@ -161,7 +161,7 @@ export default function RegalarCheckoutScreen() {
               {plan.name} · {meses === 1 ? "1 mes" : `${meses} meses`}
             </Text>
             <Text style={styles.voucherCode}>{codigo}</Text>
-            <Text style={styles.voucherNote}>Válido por 3 meses desde hoy.</Text>
+            <Text style={styles.voucherNote}>Válido por 6 meses desde hoy, el día de la compra.</Text>
           </View>
 
           <Pressable style={styles.button} onPress={compartirCodigo}>
@@ -230,6 +230,7 @@ export default function RegalarCheckoutScreen() {
         )}
 
         <Text style={styles.price}>Total: {formatCOP(total)}</Text>
+        <Text style={styles.validez}>⏳ El regalo es válido por 6 meses desde el día de la compra.</Text>
 
         {!isLoaded ? (
           <ActivityIndicator style={{ marginTop: 24 }} />
@@ -323,7 +324,7 @@ export default function RegalarCheckoutScreen() {
 
             <Text style={styles.disclaimer}>
               El plan queda a nombre de quien active el código — no se activa en tu cuenta. El
-              código dura 3 meses para canjearse.
+              regalo es válido por 6 meses desde el día de la compra.
               {meses > 1 ? ` Quien lo active recibe ${plan.credits} créditos cada mes, durante ${meses} meses.` : ""}
               {fisica ? " Te escribiremos al correo para coordinar la entrega de la tarjeta." : ""}
             </Text>
@@ -393,6 +394,19 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontSize: 15, fontWeight: "700" },
   buttonOutline: { marginTop: 10, backgroundColor: "transparent", borderWidth: 1, borderColor: "#06300933" },
   buttonOutlineText: { color: "#063009", fontSize: 15, fontWeight: "700" },
+  validez: {
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#ff4f3f4d",
+    backgroundColor: "#ff4f3f0d",
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#063009",
+    textAlign: "center",
+    overflow: "hidden",
+  },
   opcion: {
     marginTop: 8,
     borderWidth: 1,
