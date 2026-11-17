@@ -8,10 +8,12 @@ import {
   bonoBlackFridayPorcentaje,
   creditosCompraPlan,
 } from "@/lib/credits-pricing";
+import NavidadCard from "@/components/NavidadCard";
 
 export default function PlanesScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <NavidadCard />
       <Text style={styles.title}>Planes</Text>
       <Text style={styles.subtitle}>Elige tu plan mensual de créditos.</Text>
 

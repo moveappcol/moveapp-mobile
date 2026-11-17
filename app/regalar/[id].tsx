@@ -15,7 +15,14 @@ import {
 } from "react-native";
 import { apiFetch } from "@/lib/api";
 import { BackButton } from "@/components/BackButton";
-import { CREDIT_PLANS, formatCOP } from "@/lib/credits-pricing";
+import {
+  CREDIT_PLANS,
+  CIUDAD_REGALO_FISICO,
+  MESES_REGALO,
+  PRECIO_ENVIO_REGALO_FISICO,
+  esNavidad,
+  formatCOP,
+} from "@/lib/credits-pricing";
 import { tokenizeCard } from "@/lib/wompi";
 
 type Config = { wompiPublicKey: string; permalinkAcceptance: string; permalinkPersonalAuth: string };
@@ -40,6 +47,13 @@ export default function RegalarCheckoutScreen() {
   const [cvc, setCvc] = useState("");
   const [accepted, setAccepted] = useState(false);
 
+  const [meses, setMeses] = useState<number>(1);
+  const [fisica, setFisica] = useState(false);
+  const [para, setPara] = useState("");
+  const [deParte, setDeParte] = useState("");
+  const [direccion, setDireccion] = useState("");
+  const [celular, setCelular] = useState("");
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -59,8 +73,18 @@ export default function RegalarCheckoutScreen() {
     );
   }
 
+  const total = plan ? plan.price * meses + (fisica ? PRECIO_ENVIO_REGALO_FISICO : 0) : 0;
+
   async function handleSubmit() {
     setError(null);
+    if (!para.trim() || !deParte.trim()) {
+      setError("Escribe para quién es y de parte de quién.");
+      return;
+    }
+    if (fisica && (!direccion.trim() || !celular.trim())) {
+      setError("Escribe la dirección y el celular para la entrega.");
+      return;
+    }
     if (!accepted) {
       setError("Debes aceptar los términos y el tratamiento de datos.");
       return;
@@ -84,7 +108,15 @@ export default function RegalarCheckoutScreen() {
       const token = await getToken();
       const result = await apiFetch<GiftChargeResult>("/regalar/comprar", token, {
         method: "POST",
-        body: { planId: plan!.id, cardToken },
+        body: {
+          planId: plan!.id,
+          cardToken,
+          meses,
+          fisica,
+          para,
+          deParte,
+          envio: fisica ? { ciudad: CIUDAD_REGALO_FISICO, direccion, celular } : null,
+        },
       });
 
       if (result.ok) {
@@ -105,7 +137,7 @@ export default function RegalarCheckoutScreen() {
     if (!codigo) return;
     try {
       await Share.share({
-        message: `Te regalé un plan ${plan!.name} de UNIQUE 🎁\n\nCódigo: ${codigo}\n\nActívalo en la app, en "Canjear un regalo", o entra a uniqueappcol.com/canjear`,
+        message: `Te regalé ${meses === 1 ? "1 mes" : `${meses} meses`} de UNIQUE (plan ${plan!.name}) 🎁\n\nCódigo: ${codigo}\n\nActívalo en la app, en "Canjear un regalo", o entra a uniqueappcol.com/canjear`,
       });
     } catch {
       // si falla el share nativo no pasa nada, el código ya se ve en pantalla
@@ -125,7 +157,9 @@ export default function RegalarCheckoutScreen() {
           </Text>
 
           <View style={styles.voucherBox}>
-            <Text style={styles.voucherLabel}>{plan.name} — {plan.label}</Text>
+            <Text style={styles.voucherLabel}>
+              {plan.name} · {meses === 1 ? "1 mes" : `${meses} meses`}
+            </Text>
             <Text style={styles.voucherCode}>{codigo}</Text>
             <Text style={styles.voucherNote}>Válido por 3 meses desde hoy.</Text>
           </View>
@@ -149,10 +183,53 @@ export default function RegalarCheckoutScreen() {
     <>
       <Stack.Screen options={{ headerShown: true, title: "Regalar", headerLeft: () => <BackButton /> }} />
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.eyebrow}>Regalar</Text>
+        <Text style={styles.eyebrow}>{esNavidad() ? "🎄 Regalos de Navidad" : "Tarjeta de regalo"}</Text>
         <Text style={styles.title}>{plan.name}</Text>
-        <Text style={styles.subtitle}>{plan.label}</Text>
-        <Text style={styles.price}>{formatCOP(plan.price)}</Text>
+        <Text style={styles.subtitle}>{plan.label} al mes</Text>
+
+        <Text style={styles.label}>¿Cuántos meses?</Text>
+        <View style={styles.row}>
+          {MESES_REGALO.map((m) => (
+            <Pressable key={m} onPress={() => setMeses(m)} style={[styles.opcion, styles.rowItem, meses === m && styles.opcionActiva]}>
+              <Text style={styles.opcionTitulo}>{m === 1 ? "1 mes" : `${m} meses`}</Text>
+              <Text style={styles.opcionDetalle}>{formatCOP(plan.price * m)}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Text style={styles.label}>¿Cómo la quieres?</Text>
+        <View style={styles.row}>
+          <Pressable onPress={() => setFisica(false)} style={[styles.opcion, styles.rowItem, !fisica && styles.opcionActiva]}>
+            <Text style={styles.opcionTitulo}>💌 Virtual</Text>
+            <Text style={styles.opcionDetalle}>Te llega al correo. Sin costo extra.</Text>
+          </Pressable>
+          <Pressable onPress={() => setFisica(true)} style={[styles.opcion, styles.rowItem, fisica && styles.opcionActiva]}>
+            <Text style={styles.opcionTitulo}>🎁 Física</Text>
+            <Text style={styles.opcionDetalle}>
+              +{formatCOP(PRECIO_ENVIO_REGALO_FISICO)} de envío, solo en {CIUDAD_REGALO_FISICO}.
+            </Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.label}>Para</Text>
+        <TextInput style={styles.input} placeholder="¿Para quién es?" placeholderTextColor="#06300966" value={para} onChangeText={setPara} />
+        <Text style={styles.label}>De parte de</Text>
+        <TextInput style={styles.input} placeholder="¿De parte de quién?" placeholderTextColor="#06300966" value={deParte} onChangeText={setDeParte} />
+
+        {fisica && (
+          <>
+            <Text style={styles.label}>Ciudad</Text>
+            <View style={[styles.input, { opacity: 0.7 }]}>
+              <Text style={{ fontSize: 15, color: "#063009" }}>{CIUDAD_REGALO_FISICO} (por ahora solo entregamos aquí)</Text>
+            </View>
+            <Text style={styles.label}>Dirección de entrega</Text>
+            <TextInput style={styles.input} placeholder="Calle, número, apto, barrio" placeholderTextColor="#06300966" value={direccion} onChangeText={setDireccion} />
+            <Text style={styles.label}>Celular para coordinar la entrega</Text>
+            <TextInput style={styles.input} keyboardType="phone-pad" placeholder="300 123 4567" placeholderTextColor="#06300966" value={celular} onChangeText={setCelular} />
+          </>
+        )}
+
+        <Text style={styles.price}>Total: {formatCOP(total)}</Text>
 
         {!isLoaded ? (
           <ActivityIndicator style={{ marginTop: 24 }} />
@@ -247,6 +324,8 @@ export default function RegalarCheckoutScreen() {
             <Text style={styles.disclaimer}>
               El plan queda a nombre de quien active el código — no se activa en tu cuenta. El
               código dura 3 meses para canjearse.
+              {meses > 1 ? ` Quien lo active recibe ${plan.credits} créditos cada mes, durante ${meses} meses.` : ""}
+              {fisica ? " Te escribiremos al correo para coordinar la entrega de la tarjeta." : ""}
             </Text>
 
             {error && <Text style={styles.errorText}>{error}</Text>}
@@ -259,7 +338,7 @@ export default function RegalarCheckoutScreen() {
               {submitting ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.buttonText}>Pagar — {formatCOP(plan.price)}</Text>
+                <Text style={styles.buttonText}>Pagar — {formatCOP(total)}</Text>
               )}
             </Pressable>
           </View>
@@ -314,6 +393,16 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontSize: 15, fontWeight: "700" },
   buttonOutline: { marginTop: 10, backgroundColor: "transparent", borderWidth: 1, borderColor: "#06300933" },
   buttonOutlineText: { color: "#063009", fontSize: 15, fontWeight: "700" },
+  opcion: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#06300922",
+    borderRadius: 14,
+    padding: 12,
+  },
+  opcionActiva: { borderColor: "#ff4f3f", backgroundColor: "#ff4f3f0d" },
+  opcionTitulo: { fontSize: 15, fontWeight: "800", color: "#063009" },
+  opcionDetalle: { fontSize: 11.5, color: "#06300999", marginTop: 2 },
   voucherEmoji: { fontSize: 40, textAlign: "center", marginTop: 12 },
   voucherBox: {
     marginTop: 24,
