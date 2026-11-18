@@ -176,6 +176,10 @@ export default function GymDetailScreen() {
   const [bookState, setBookState] = useState<BookState>({});
   const [waitlistState, setWaitlistState] = useState<WaitlistState>({});
   const [molestiasState, setMolestiasState] = useState<Record<string, string>>({});
+  // Pase de clase gratis del Challenge (si tiene uno vigente): se ofrece
+  // reservar con él, marcado por defecto. No aplica a Experiencias.
+  const [paseVence, setPaseVence] = useState<string | null>(null);
+  const [sinPase, setSinPase] = useState<Record<string, boolean>>({});
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const [scrolledToTarget, setScrolledToTarget] = useState(false);
@@ -291,7 +295,36 @@ export default function GymDetailScreen() {
     }
   }
 
+  const cargarPase = useCallback(async () => {
+    if (!isSignedIn || !state.data || esGimnasioDeExperiencias(state.data.gym.name)) return;
+    try {
+      const token = await getToken();
+      const challenge = await apiFetch<{ disponible: boolean; pase?: { fechaVence: string } | null }>(
+        "/me/challenge",
+        token
+      );
+      const vence = challenge.disponible ? challenge.pase?.fechaVence ?? null : null;
+      setPaseVence(
+        vence
+          ? new Date(`${vence}T12:00:00-05:00`).toLocaleDateString("es-CO", {
+              timeZone: "America/Bogota",
+              day: "numeric",
+              month: "long",
+            })
+          : null
+      );
+    } catch {
+      setPaseVence(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn, state.data]);
+
+  useEffect(() => {
+    cargarPase();
+  }, [cargarPase]);
+
   async function reservar(claseId: string) {
+    const usarPaseGratis = Boolean(paseVence) && !sinPase[claseId];
     setBookState((prev) => ({ ...prev, [claseId]: { loading: true, error: null, ok: false } }));
     try {
       const token = await getToken();
@@ -302,7 +335,7 @@ export default function GymDetailScreen() {
         remainingCredits?: number;
       }>(`/gimnasios/${id}/reservar`, token, {
         method: "POST",
-        body: { claseId, molestias: molestiasState[claseId]?.trim() || undefined },
+        body: { claseId, molestias: molestiasState[claseId]?.trim() || undefined, usarPaseGratis },
       });
       if (result.ok) {
         setBookState((prev) => ({
@@ -315,6 +348,7 @@ export default function GymDetailScreen() {
           },
         }));
         load();
+        if (usarPaseGratis) setPaseVence(null);
       } else {
         setBookState((prev) => ({
           ...prev,
@@ -686,12 +720,26 @@ export default function GymDetailScreen() {
                       setMolestiasState((prev) => ({ ...prev, [clase.id]: text }))
                     }
                   />
+                  {paseVence && !book?.ok && (
+                    <Pressable
+                      onPress={() => setSinPase((prev) => ({ ...prev, [clase.id]: !prev[clase.id] }))}
+                      style={[styles.paseRow, sinPase[clase.id] && styles.paseRowOff]}
+                    >
+                      <Text style={styles.paseCheck}>{sinPase[clase.id] ? "○" : "●"}</Text>
+                      <Text style={styles.paseText}>
+                        🎁 Usar mi clase gratis del challenge{"\n"}
+                        <Text style={styles.paseVence}>Vence el {paseVence}</Text>
+                      </Text>
+                    </Pressable>
+                  )}
                   <Pressable
                     disabled={book?.loading || book?.ok}
                     onPress={() =>
                       Alert.alert(
                         "¿Quieres confirmar tu reserva?",
-                        `Vas a reservar "${clase.name}" por ${precioEfectivo(clase)} créditos.`,
+                        paseVence && !sinPase[clase.id]
+                          ? `Vas a reservar "${clase.name}" con tu clase gratis del challenge 🎁 — no se descuentan créditos.`
+                          : `Vas a reservar "${clase.name}" por ${precioEfectivo(clase)} créditos.`,
                         [
                           { text: "Cancelar", style: "cancel" },
                           { text: "Confirmar", onPress: () => reservar(clase.id) },
@@ -738,6 +786,21 @@ export default function GymDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  paseRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 10,
+    borderWidth: 1.5,
+    borderColor: "#ff4f3f66",
+    backgroundColor: "#ff4f3f0d",
+    borderRadius: 14,
+    padding: 12,
+  },
+  paseRowOff: { borderColor: "#06300922", backgroundColor: "transparent" },
+  paseCheck: { color: "#ff4f3f", fontSize: 16, fontWeight: "900" },
+  paseText: { flex: 1, color: "#063009", fontSize: 14, fontWeight: "700" },
+  paseVence: { color: "#06300999", fontSize: 12, fontWeight: "500" },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
   container: { padding: 16 },
   photoRow: { flexDirection: "row", gap: 8, marginBottom: 12 },

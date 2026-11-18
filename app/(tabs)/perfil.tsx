@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { apiFetch } from "@/lib/api";
+import ChallengeCard from "@/components/ChallengeCard";
 import { getCached, setCached } from "@/lib/cache";
 import { CREDIT_PLANS } from "@/lib/credits-pricing";
 import { whatsappUrl } from "@/lib/whatsapp";
@@ -263,6 +264,8 @@ function SignedInView() {
 
       {state.loading && <ActivityIndicator style={styles.loader} />}
       {state.error && <Text style={styles.error}>{state.error}</Text>}
+
+      <ChallengeCard />
 
       {state.credits && (
         <View style={styles.card}>
