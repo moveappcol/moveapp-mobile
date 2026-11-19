@@ -219,6 +219,7 @@ export default function PlanCheckoutScreen() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "No pudimos procesar el pago.");
     } finally {
+      setEsperandoNequi(false);
       setSubmitting(false);
     }
   }

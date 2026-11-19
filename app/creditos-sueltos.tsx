@@ -20,7 +20,8 @@ import {
   formatCOP,
   precioCreditosSueltos,
 } from "@/lib/credits-pricing";
-import { tokenizeCard } from "@/lib/wompi";
+import { tokenizeCard, tokenizeNequi } from "@/lib/wompi";
+import { MetodoPagoToggle, NequiFields, type MetodoPago } from "@/components/MetodoPago";
 
 type Config = { wompiPublicKey: string; permalinkAcceptance: string; permalinkPersonalAuth: string };
 type BuyResult = { ok: true; credits: number } | { ok: false; error: string; pending?: boolean };
@@ -46,6 +47,9 @@ export default function CreditosSueltosScreen() {
   const [expYear, setExpYear] = useState("");
   const [cvc, setCvc] = useState("");
   const [accepted, setAccepted] = useState(false);
+  const [metodo, setMetodo] = useState<MetodoPago>("tarjeta");
+  const [telefonoNequi, setTelefonoNequi] = useState("");
+  const [esperandoNequi, setEsperandoNequi] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,14 +84,22 @@ export default function CreditosSueltosScreen() {
 
     setSubmitting(true);
     try {
-      const cardToken = await tokenizeCard({
-        publicKey: config.wompiPublicKey,
-        number,
-        cvc,
-        expMonth,
-        expYear,
-        cardHolder,
-      });
+      const cardToken =
+        metodo === "nequi"
+          ? await tokenizeNequi({
+              publicKey: config.wompiPublicKey,
+              telefono: telefonoNequi,
+              onEsperando: () => setEsperandoNequi(true),
+            })
+          : await tokenizeCard({
+              publicKey: config.wompiPublicKey,
+              number,
+              cvc,
+              expMonth,
+              expYear,
+              cardHolder,
+            });
+      setEsperandoNequi(false);
 
       const token = await getToken();
       const result = await apiFetch<BuyResult>("/creditos/sueltos", token, {
@@ -105,6 +117,7 @@ export default function CreditosSueltosScreen() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "No pudimos procesar el pago.");
     } finally {
+      setEsperandoNequi(false);
       setSubmitting(false);
     }
   }
@@ -155,55 +168,67 @@ export default function CreditosSueltosScreen() {
               <Text style={styles.totalText}>Total: {formatCOP(precio)}</Text>
             </View>
 
-            <Text style={styles.label}>Número de tarjeta</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="number-pad"
-              placeholder="4242 4242 4242 4242"
-              placeholderTextColor="#06300966"
-              value={number}
-              onChangeText={setNumber}
-            />
+            <MetodoPagoToggle metodo={metodo} setMetodo={setMetodo} />
+            {metodo === "nequi" ? (
+              <NequiFields
+                telefono={telefonoNequi}
+                setTelefono={setTelefonoNequi}
+                esperando={esperandoNequi}
+                ayuda="Te llegará una solicitud a tu app de Nequi para autorizar este pago. Acéptala para terminar."
+              />
+            ) : (
+              <>
+              <Text style={styles.label}>Número de tarjeta</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="number-pad"
+                placeholder="4242 4242 4242 4242"
+                placeholderTextColor="#06300966"
+                value={number}
+                onChangeText={setNumber}
+              />
 
-            <Text style={styles.label}>Nombre en la tarjeta</Text>
-            <TextInput style={styles.input} value={cardHolder} onChangeText={setCardHolder} />
+              <Text style={styles.label}>Nombre en la tarjeta</Text>
+              <TextInput style={styles.input} value={cardHolder} onChangeText={setCardHolder} />
 
-            <View style={styles.row}>
-              <View style={styles.rowItem}>
-                <Text style={styles.label}>Mes</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  placeholder="MM"
-                  placeholderTextColor="#06300966"
-                  value={expMonth}
-                  onChangeText={setExpMonth}
-                />
+              <View style={styles.row}>
+                <View style={styles.rowItem}>
+                  <Text style={styles.label}>Mes</Text>
+                  <TextInput
+                    style={styles.input}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    placeholder="MM"
+                    placeholderTextColor="#06300966"
+                    value={expMonth}
+                    onChangeText={setExpMonth}
+                  />
+                </View>
+                <View style={styles.rowItem}>
+                  <Text style={styles.label}>Año</Text>
+                  <TextInput
+                    style={styles.input}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    placeholder="AA"
+                    placeholderTextColor="#06300966"
+                    value={expYear}
+                    onChangeText={setExpYear}
+                  />
+                </View>
+                <View style={styles.rowItem}>
+                  <Text style={styles.label}>CVC</Text>
+                  <TextInput
+                    style={styles.input}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    value={cvc}
+                    onChangeText={setCvc}
+                  />
+                </View>
               </View>
-              <View style={styles.rowItem}>
-                <Text style={styles.label}>Año</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  placeholder="AA"
-                  placeholderTextColor="#06300966"
-                  value={expYear}
-                  onChangeText={setExpYear}
-                />
-              </View>
-              <View style={styles.rowItem}>
-                <Text style={styles.label}>CVC</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="number-pad"
-                  maxLength={4}
-                  value={cvc}
-                  onChangeText={setCvc}
-                />
-              </View>
-            </View>
+              </>
+            )}
 
             <View style={styles.acceptRow}>
               <Switch value={accepted} onValueChange={setAccepted} />
