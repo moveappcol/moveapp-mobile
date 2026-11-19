@@ -15,7 +15,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import { BackButton } from "@/components/BackButton";
 import { CREDIT_PLANS, formatCOP, bonoBlackFridayPorcentaje, creditosCompraPlan } from "@/lib/credits-pricing";
-import { tokenizeCard } from "@/lib/wompi";
+import { tokenizeCard, tokenizeNequi } from "@/lib/wompi";
 
 type Config = { wompiPublicKey: string; permalinkAcceptance: string; permalinkPersonalAuth: string };
 type SubscribeResult = { ok: true; credits: number } | { ok: false; error: string; pending?: boolean };
@@ -58,6 +58,9 @@ export default function PlanCheckoutScreen() {
   const [expYear, setExpYear] = useState("");
   const [cvc, setCvc] = useState("");
   const [accepted, setAccepted] = useState(false);
+  const [metodo, setMetodo] = useState<"tarjeta" | "nequi">("tarjeta");
+  const [telefonoNequi, setTelefonoNequi] = useState("");
+  const [esperandoNequi, setEsperandoNequi] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,6 +162,7 @@ export default function PlanCheckoutScreen() {
       : null;
 
   async function handleSubmit() {
+    setEsperandoNequi(false);
     setError(null);
     if (!accepted) {
       setError("Debes aceptar los términos y el tratamiento de datos.");
@@ -177,14 +181,22 @@ export default function PlanCheckoutScreen() {
 
     setSubmitting(true);
     try {
-      const cardToken = await tokenizeCard({
-        publicKey: config.wompiPublicKey,
-        number,
-        cvc,
-        expMonth,
-        expYear,
-        cardHolder,
-      });
+      const cardToken =
+        metodo === "nequi"
+          ? await tokenizeNequi({
+              publicKey: config.wompiPublicKey,
+              telefono: telefonoNequi,
+              onEsperando: () => setEsperandoNequi(true),
+            })
+          : await tokenizeCard({
+              publicKey: config.wompiPublicKey,
+              number,
+              cvc,
+              expMonth,
+              expYear,
+              cardHolder,
+            });
+      setEsperandoNequi(false);
 
       const token = await getToken();
       const result = await apiFetch<SubscribeResult>("/suscripcion/comprar", token, {
@@ -261,6 +273,44 @@ export default function PlanCheckoutScreen() {
             {configError && <Text style={styles.errorText}>{configError}</Text>}
 
             {coupon.status !== "valid-gratis" && (
+              <View style={styles.metodoRow}>
+                {(["tarjeta", "nequi"] as const).map((m) => (
+                  <Pressable
+                    key={m}
+                    onPress={() => setMetodo(m)}
+                    style={[styles.metodoBtn, metodo === m && styles.metodoBtnOn]}
+                  >
+                    <Text style={[styles.metodoText, metodo === m && styles.metodoTextOn]}>
+                      {m === "tarjeta" ? "Tarjeta" : "Nequi"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            {coupon.status !== "valid-gratis" && metodo === "nequi" && (
+              <>
+                <Text style={styles.label}>Celular de tu cuenta Nequi</Text>
+                <TextInput
+                  style={styles.input}
+                  keyboardType="phone-pad"
+                  placeholder="300 123 4567"
+                  placeholderTextColor="#06300966"
+                  value={telefonoNequi}
+                  onChangeText={setTelefonoNequi}
+                />
+                <Text style={styles.nequiHint}>
+                  Te llegará una solicitud a tu app de Nequi para autorizar el pago mensual de tu plan. Acéptala para terminar.
+                </Text>
+                {esperandoNequi && (
+                  <Text style={styles.nequiEsperando}>
+                    📲 Abre tu app de Nequi y acepta la solicitud de UNIQUE. Cuando vuelvas, terminamos el pago.
+                  </Text>
+                )}
+              </>
+            )}
+
+            {coupon.status !== "valid-gratis" && metodo === "tarjeta" && (
               <>
                 <Text style={styles.label}>Número de tarjeta</Text>
                 <TextInput
@@ -486,6 +536,22 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 10 },
   rowItem: { flex: 1 },
   acceptRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 20 },
+  metodoRow: { flexDirection: "row", gap: 6, backgroundColor: "#0630090d", borderRadius: 999, padding: 4, marginTop: 8 },
+  metodoBtn: { flex: 1, borderRadius: 999, paddingVertical: 10, alignItems: "center" },
+  metodoBtnOn: { backgroundColor: "#063009" },
+  metodoText: { color: "#063009b3", fontWeight: "700", fontSize: 14 },
+  metodoTextOn: { color: "#fff" },
+  nequiHint: { fontSize: 12, color: "#06300999", marginTop: 6, lineHeight: 17 },
+  nequiEsperando: {
+    marginTop: 10,
+    backgroundColor: "#D4FF3F66",
+    color: "#063009",
+    fontWeight: "700",
+    fontSize: 13,
+    padding: 12,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
   acceptText: { flex: 1, fontSize: 12, color: "#06300999", lineHeight: 18 },
   linkText: { color: "#ff4f3f" },
   disclaimer: { fontSize: 11.5, color: "#06300977", marginTop: 16, lineHeight: 17 },
